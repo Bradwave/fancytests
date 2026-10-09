@@ -77,7 +77,8 @@
 
 \title{\Huge\bfseries fancytests\\[.3em]
   \Large\mdseries Maths and physics tests in \LaTeX}
-\author{Matteo Bramardi}
+\author{Matteo Bramardi\\[.2em]
+  \normalsize co-authored with Claude (Anthropic)}
 \date{Version 2.0 --- October 2026}
 
 \begin{document}
@@ -89,7 +90,8 @@
 \noindent
 \textsf{fancytests} is a \LaTeX{} package for writing school tests in
 mathematics and physics. It replaces the test-related part of
-\textsf{fancylessons} with a smaller and faster package. Every command takes
+\textsf{fancylessons}, the author's previous package, with a smaller and
+faster one. Every command takes
 named options (\texttt{key=value}); there are no more round, angle or bar
 delimiters.
 
@@ -111,6 +113,26 @@ An optional compatibility layer compiles the tests written with
 \section{Getting started}
 %% ===========================================================================
 
+\subsection{About this package}
+
+\textsf{fancylessons} was the author's earlier \LaTeX{} package, used both
+for lesson notes (theorem and definition boxes, colours, page styles) and for
+tests. Over time it grew to more than 4000 lines and about 70 loaded packages,
+which made every compilation slow. \textsf{fancytests} keeps only what is
+needed for tests, redesigned with a uniform \texttt{key=value} syntax and
+new features (answer key, shuffled questions, reduced versions, teacher
+copies).
+
+The references to \textsf{fancylessons} in this manual (speed comparisons,
+the \opt{legacy} option, the table of old and new commands in
+section~\ref{sec:legacy}) are there mainly for the author, to compare the old
+and the new version and to reuse past tests. Other readers can safely ignore
+them.
+
+\textsf{fancytests} and this manual were written by Matteo Bramardi together
+with Claude, an AI model by Anthropic, which wrote and tested most of the
+code under the author's direction.
+
 \subsection{Installation}
 
 The package is a single file, \texttt{fancytests.sty}. Put it in the same
@@ -119,7 +141,7 @@ folder as the document and load it in the preamble.
 On Overleaf, the simplest way to keep it up to date is to link it from GitHub:
 \emph{Upload} $\to$ \emph{From external URL}, with the address
 \begin{center}\small
-\texttt{https://raw.githubusercontent.com/\meta{username}/fancytests/main/fancytests.sty}
+\texttt{https://raw.githubusercontent.com/Bradwave/fancytests/main/fancytests.sty}
 \end{center}
 The \emph{Refresh} button of the linked file downloads the latest version.
 Replace \texttt{main} with a release tag (e.g.\ \texttt{v2.0}) to freeze a

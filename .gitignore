@@ -1,0 +1,49 @@
+# --- LaTeX: file generati dalla compilazione --------------------------------
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.synctex(busy)
+*.nav
+*.snm
+*.vrb
+*.bbl
+*.blg
+*.run.xml
+*.bcf
+# tcolorbox (manuale)
+*.listing
+
+# --- fancytests --------------------------------------------------------------
+# chiave di correzione generata a ogni compilazione
+*.key.csv
+# cache delle figure (opzione cache / memoize)
+*.mmz
+*.mmz.log
+*.memo
+*.memo.dir/
+*.[0-9A-F][0-9A-F][0-9A-F][0-9A-F]*-[0-9A-F]*.pdf
+# figure esterne di TikZ (tikz external)
+*.dpth
+*.md5
+figures-cache/
+
+# --- PDF ---------------------------------------------------------------------
+# Si tengono solo il manuale e i PDF degli esempi (anteprima su GitHub);
+# qualsiasi altro PDF (prove locali) resta fuori.
+*.pdf
+!docs/fancytests-doc.pdf
+!examples/*.pdf
+
+# --- Sistema ed editor -------------------------------------------------------
+.DS_Store
+Thumbs.db
+*~
+*.swp
+.vscode/
+.idea/

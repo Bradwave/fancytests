@@ -6,10 +6,13 @@ automatic score totals, shuffled multiple-choice questions with an exported
 answer key, reproducible variants, reduced versions and teacher copies — from
 a single source file.
 
-It replaces the test-related part of `fancylessons`, loads about twice as fast,
-and uses a `key=value` syntax throughout.
+It replaces the test-related part of `fancylessons` (the author's earlier
+package, used for both lesson notes and tests), loads about twice as fast, and
+uses a `key=value` syntax throughout. References to `fancylessons` in the
+manual and in the `legacy` option are mainly for the author, to compare the old
+and new versions and reuse past tests.
 
-**Manual:** [`docs/fancytests-doc.pdf`](docs/fancytests-doc.pdf)
+**Manual:** [`docs/fancytests-doc.pdf`](docs/fancytests-doc.pdf) · **Repository:** <https://github.com/Bradwave/fancytests>
 
 ## Quick start
 
@@ -51,7 +54,7 @@ to your `.tex` file.
 **Overleaf.** In your project choose *Upload → From external URL* and paste
 
 ```
-https://raw.githubusercontent.com/<username>/fancytests/main/fancytests.sty
+https://raw.githubusercontent.com/Bradwave/fancytests/main/fancytests.sty
 ```
 
 Overleaf keeps a linked copy: the *Refresh* button downloads the latest
@@ -89,6 +92,12 @@ included `.latexmkrc` finds `fancytests.sty` in the parent folder) or copy
 - **Graphs and diagrams** — `ftplot` and TikZ styles for physics.
 - **Speed** — `nofigures` draft mode and `cache` for figures.
 - **Compatibility** — `legacy` option for tests written with `fancylessons`.
+
+## Credits
+
+Written by Matteo Bramardi, co-authored with
+[Claude](https://www.anthropic.com/claude) (Anthropic), which wrote and tested
+most of the code under the author's direction.
 
 ## Licence
 
