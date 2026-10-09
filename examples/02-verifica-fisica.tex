@@ -1,0 +1,74 @@
+\documentclass[10pt]{article}
+
+%% Esempio 2 - Verifica di fisica (intestazione compatta).
+%% Mostra: materia fisica (colore verde), misure DSA, unita' con siunitx,
+%% titolo lungo su una riga propria, diagrammi TikZ, vero/falso con choices,
+%% tabella finale dei punteggi.
+\usepackage[subject=physics]{fancytests}
+\usepackage{lmodern}
+\renewcommand*\familydefault{\sfdefault}
+\usepackage[T1]{fontenc}
+
+\geometry{a4paper, top=15mm, bottom=15mm, left=17.5mm, right=17.5mm}
+\linespread{1.25}
+
+\testsetup{class=4G, style=compact, dsa=rid}
+
+\begin{document}
+
+\testheader[date=22/05/2026,
+  title={Onde meccaniche, suono e fenomeni ondulatori: battimenti ed effetto Doppler}]
+
+\exercise Un'onda sinusoidale si propaga lungo una corda con velocità
+$v = \qty{340}{m/s}$ e frequenza $f = \qty{170}{Hz}$.
+
+\begin{parts}
+  \itemx[pts=1] Calcola la lunghezza d'onda $\lambda$.
+  \itemx[pts=1] Se la frequenza raddoppia a parità di mezzo, la lunghezza d'onda
+    \begin{choices}
+      \correct si dimezza.
+      \choice  raddoppia.
+      \choice  resta invariata.
+      \choice  quadruplica.
+    \end{choices}
+  \itemx[pts=1, noreduced] Calcola il periodo dell'onda.
+\end{parts}
+
+\exercise[diff=2] Un blocco di massa $m = \qty{2.0}{kg}$ scivola senza attrito
+lungo un piano inclinato di $30^\circ$ ed è collegato a una molla.
+
+\begin{minipage}[c]{.42\linewidth}
+  \centering
+  \begin{tikzpicture}[scale=.9]
+    \fill[ground] (0,0) -- (4.5,0) -- (4.5,2.6) -- cycle;
+    \draw[thick] (0,0) -- (4.5,0) -- (4.5,2.6) -- cycle;
+    \node[body, minimum size=7mm, rotate=30] (b) at (2.3,1.65) {};
+    \draw[spring] (b.east) -- (4.5,2.6);
+    \draw[force] (b.center) -- ++(0,-1.0) node[right] {$m\vb{g}$};
+    \draw[velocity] (b.west) -- ++(-1.1,-0.63) node[above left] {$\vb{v}$};
+    \draw (1.0,0) arc (0:30:1.0) node[midway, right] {\small $30^\circ$};
+  \end{tikzpicture}
+\end{minipage}\hfill
+\begin{minipage}[c]{.55\linewidth}
+  \begin{parts}[ragged]
+    \itemx[pts=1] Disegna il diagramma di corpo libero del blocco.
+    \itemx[pts=1.5] Calcola la componente della forza peso parallela al piano.
+    \itemx[pts=1.5, noreduced] Determina l'allungamento della molla all'equilibrio,
+      sapendo che $k = \qty{200}{N/m}$.
+  \end{parts}
+\end{minipage}
+
+\exercise Stabilisci se le seguenti affermazioni sono vere o false.
+
+\begin{parts}
+  \itemx[pts=0.5] Il suono si propaga anche nel vuoto.
+    \begin{choices}[shuffle=false] \choice Vero \correct Falso \end{choices}
+  \itemx[pts=0.5] La frequenza dei battimenti è la differenza delle due frequenze.
+    \begin{choices}[shuffle=false] \correct Vero \choice Falso \end{choices}
+\end{parts}
+\exercisescore
+
+\vfill
+\finalscore[style=table]
+
+\end{document}

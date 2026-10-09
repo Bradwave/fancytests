@@ -1,0 +1,912 @@
+\documentclass[10pt]{article}
+
+% The documentation loads the library itself: every example is compiled live.
+\usepackage[seed=2026]{fancytests}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\renewcommand*\familydefault{\sfdefault}
+\geometry{a4paper, top=22mm, bottom=22mm, left=22mm, right=22mm}
+
+\usepackage[most]{tcolorbox}
+\usepackage{hyperref}
+\hypersetup{colorlinks, linkcolor=FriendlyDenim, urlcolor=FriendlyDenim}
+
+% ---------------------------------------------------------------------------
+% Documentation helpers
+% ---------------------------------------------------------------------------
+\lstdefinestyle{ftcode}{
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{FriendlyDenim},
+  commentstyle=\color{black!50},
+  columns=fullflexible, keepspaces=true, breaklines=true,
+  literate={à}{{\`a}}1 {è}{{\`e}}1 {é}{{\'e}}1 {ì}{{\`i}}1 {ò}{{\`o}}1 {ù}{{\`u}}1
+           {’}{{'}}1,
+}
+\lstset{style=ftcode}
+
+% code above, result below
+\newtcblisting{example}{
+  enhanced, colback=white, colframe=black!20, colbacklower=white,
+  listing above text, sharp corners, boxrule=.5pt,
+  segmentation style={black!20, solid},
+  listing options={style=ftcode},
+  before upper={\ResetAllScores\testsetup{subject=math}},
+  title={\small Example}, coltitle=black!70, colbacktitle=black!4,
+  fonttitle=\bfseries}
+% code only
+\newtcblisting{code}{
+  enhanced, colback=black!3, colframe=black!12, listing only, sharp corners,
+  boxrule=.4pt, listing options={style=ftcode}}
+
+\newcommand*{\cs}[1]{\texttt{\textbackslash#1}}
+\newcommand*{\env}[1]{\texttt{#1}}
+\newcommand*{\key}[1]{\texttt{\color{FriendlyDenim}#1}}
+\newcommand*{\meta}[1]{\ensuremath{\langle}\textit{#1}\ensuremath{\rangle}}
+\newcommand*{\opt}[1]{\texttt{#1}}
+\newcommand*{\marg}[1]{\texttt{\{}\meta{#1}\texttt{\}}}
+\newcommand*{\oarg}[1]{\texttt{[}\meta{#1}\texttt{]}}
+
+% key tables
+\newenvironment{keys}
+  {\par\smallskip\noindent\small
+   \renewcommand{\arraystretch}{1.25}%
+   \tabularx{\linewidth}{@{}>{\raggedright\arraybackslash}p{.24\linewidth}
+                          >{\raggedright\arraybackslash}p{.17\linewidth}>{\raggedright\arraybackslash}X@{}}
+   \toprule \textbf{Key} & \textbf{Default} & \textbf{Meaning}\\ \midrule}
+  {\bottomrule\endtabularx\par\smallskip}
+
+\newenvironment{cmds}
+  {\par\smallskip\noindent\small
+   \renewcommand{\arraystretch}{1.25}%
+   \tabularx{\linewidth}{@{}>{\raggedright\arraybackslash}p{.36\linewidth}>{\raggedright\arraybackslash}X@{}}
+   \toprule \textbf{Command} & \textbf{Meaning}\\ \midrule}
+  {\bottomrule\endtabularx\par\smallskip}
+
+\newcommand*{\note}[1]{%
+  \par\smallskip\noindent
+  \colorbox{FriendlyYellow!18}{\parbox{\dimexpr\linewidth-2\fboxsep}{\small\textbf{Note.} #1}}%
+  \par\smallskip}
+
+% the test header switches the page style off: keep page numbers in the manual
+\NewCommandCopy\ftOrigTestheader\testheader
+\RenewDocumentCommand\testheader{O{}}{\ftOrigTestheader[#1]\pagestyle{plain}}
+
+\setlength{\parskip}{.45em}
+\setlength{\emergencystretch}{3em}
+\linespread{1.1}
+
+\title{\Huge\bfseries fancytests\\[.3em]
+  \Large\mdseries Maths and physics tests in \LaTeX}
+\author{Matteo Bramardi}
+\date{Version 2.0 --- October 2026}
+
+\begin{document}
+\pagestyle{plain}
+\maketitle
+\thispagestyle{empty}
+
+\begin{abstract}
+\noindent
+\textsf{fancytests} is a \LaTeX{} package for writing school tests in
+mathematics and physics. It replaces the test-related part of
+\textsf{fancylessons} with a smaller and faster package. Every command takes
+named options (\texttt{key=value}); there are no more round, angle or bar
+delimiters.
+
+It provides: a test header (full or compact) with the boxes required for
+students with DSA; exercises and questions with automatic score totals;
+multiple-choice questions with shuffled options and an exported answer key;
+reproducible randomisation of variants, numbers, questions and exercises;
+reduced versions of a test from the same source; teacher copies with
+solutions; standard styles for function graphs and physics diagrams.
+
+An optional compatibility layer compiles the tests written with
+\textsf{fancylessons} without changes.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%% ===========================================================================
+\section{Getting started}
+%% ===========================================================================
+
+\subsection{Installation}
+
+The package is a single file, \texttt{fancytests.sty}. Put it in the same
+folder as the document and load it in the preamble.
+
+On Overleaf, the simplest way to keep it up to date is to link it from GitHub:
+\emph{Upload} $\to$ \emph{From external URL}, with the address
+\begin{center}\small
+\texttt{https://raw.githubusercontent.com/\meta{username}/fancytests/main/fancytests.sty}
+\end{center}
+The \emph{Refresh} button of the linked file downloads the latest version.
+Replace \texttt{main} with a release tag (e.g.\ \texttt{v2.0}) to freeze a
+project on that version, which is advisable for tests already given.
+
+\note{On Overleaf, use \TeX{} Live 2023 or later (Menu $\to$ Settings $\to$
+\TeX{} Live version). Older versions lack some \LaTeX3 functions used by the
+package.}
+
+\subsection{A minimal test}
+
+\begin{code}
+\documentclass[10pt]{article}
+\usepackage{fancytests}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\renewcommand*\familydefault{\sfdefault}
+\geometry{a4paper, top=15mm, bottom=15mm, left=17.5mm, right=17.5mm}
+\linespread{1.25}
+
+\testsetup{class=4M, subject=math, dsa=rid}
+
+\begin{document}
+\testheader[date=20/03/2026, title={Logaritmi}]
+
+\exercise Risolvi le seguenti equazioni.
+\begin{parts}[cols=2]
+  \itemx[pts=1] $3^x = 9$
+  \itemx[pts=1] $\log_2 x = 3$
+\end{parts}
+
+\exercise Rispondi.
+\begin{parts}
+  \itemx[pts=1] Quale funzione è sempre crescente?
+    \begin{choices}
+      \correct $e^x$
+      \choice  $e^{-x}$
+      \choice  $\ln(-x)$
+      \choice[fixed] Nessuna delle precedenti
+    \end{choices}
+\end{parts}
+
+\vfill
+\finalscore
+\end{document}
+\end{code}
+
+The package already loads \textsf{babel} (Italian), \textsf{geometry},
+\textsf{amsmath}, \textsf{amssymb}, \textsf{mathtools}, \textsf{tabularx},
+\textsf{booktabs}, \textsf{enumitem}, \textsf{xcolor}, \textsf{bm},
+\textsf{cancel}, \textsf{tikz}, and, unless disabled, \textsf{pgfplots} and
+\textsf{siunitx}. Do not load them again with different options.
+
+\subsection{Package options}
+
+Options are given when loading the package:
+\verb|\usepackage[seed=42, answers]{fancytests}|.
+
+\begin{keys}
+\key{subject} & \opt{math} & Default subject: \opt{math} or \opt{physics}.
+  Sets the colour (blue or green) and the word in the title.\\
+\key{plots} & \opt{true} & Load \textsf{pgfplots}. With \opt{false} the
+  \env{ftplot} environment is not available, but loading is faster.\\
+\key{units} & \opt{true} & Load \textsf{siunitx} (for \cs{qty}, \cs{num}, \ldots),
+  set up with the decimal comma.\\
+\key{seed} & \opt{1} & Seed of the random generator (section~\ref{sec:random}).
+  \opt{0} = a different seed at every compilation.\\
+\key{answers} & off & Teacher copy: correct options highlighted, \env{solution}
+  boxes printed.\\
+\key{nofigures} & off & Fast draft: every TikZ picture and graph is replaced by
+  an empty frame.\\
+\key{cache} & off & Store figures and recompile them only when their code
+  changes (package \textsf{memoize}). Needs shell escape, which is enabled on
+  Overleaf.\\
+\key{legacy} & off & Load the old \textsf{fancylessons} commands
+  (section~\ref{sec:legacy}).\\
+\end{keys}
+
+\subsection{Compilation speed}
+
+On a typical test the package loads in about $0.8$\,s, against $1.9$\,s for
+\textsf{fancylessons}. Most of the remaining time is spent drawing graphs.
+To speed things up:
+
+\begin{itemize}[nosep]
+\item while writing, use \opt{nofigures}: pictures become placeholders;
+\item use \opt{cache}: each picture is drawn once and reused until its code
+  changes. The first two compilations are slower, the following ones much
+  faster;
+\item if a test has no graphs, use \opt{plots=false}.
+\end{itemize}
+
+\note{With \opt{cache}, a picture whose content depends on randomisation
+through a macro defined elsewhere (e.g.\ a shuffled graph stored in a macro)
+cannot be recognised as changed. After changing such pictures or the seed,
+use \emph{Recompile from scratch} on Overleaf, which empties the cache.}
+
+%% ===========================================================================
+\section{Global settings: \cs{testsetup}}
+%% ===========================================================================
+
+\cs{testsetup}\marg{keys} sets options for everything that follows. In the
+preamble it sets the defaults of the document; the same keys can be given to
+\cs{testheader} for a single test.
+
+\begin{keys}
+\key{subject} & \opt{math} & \opt{math} / \opt{physics} (also \opt{matematica},
+  \opt{fisica}); any other text is printed as given.\\
+\key{class} & --- & Class, e.g.\ \opt{4M}.\\
+\key{date} & empty & Date; when empty, a blank \_\_/\_\_/\_\_\_\_ is printed.\\
+\key{title} & empty & Subtitle of the test (topic).\\
+\key{type} & \opt{Verifica} & Type of test: \opt{Verifica}, \opt{Test},
+  \opt{Interrogazione}, \ldots\\
+\key{style} & \opt{full} & Header layout: \opt{full} or \opt{compact}.\\
+\key{titlebreak} & \opt{auto} & Compact header only: put the title on its own
+  line when it does not fit next to the subject (\opt{auto}), always
+  (\opt{always}) or never, letting it wrap (\opt{never}).\\
+\key{dsa} & \opt{none} & DSA boxes: \opt{none}, \opt{dsa}, \opt{rid}
+  (section~\ref{sec:header}).\\
+\key{timing} & \opt{true} & Print start, end and hand-in time fields.\\
+\key{recovery} & empty & Date of the original test, for a resit
+  (``recupero del \ldots'').\\
+\key{gradebox} & \opt{VOTO} & Label of the grade box.\\
+\key{showversion} & off & Print the copy number next to the class (\#1, \#2,
+  \ldots).\\
+\key{reduced} & off & Reduced version: questions marked \key{noreduced} are
+  left out.\\
+\key{answers} & off & Same as the package option, but can be switched on and
+  off inside the document.\\
+\key{labels} & \opt{box} & Labels of multiple-choice options: \opt{box}
+  ($\square$) or \opt{letters} (A, B, C, \ldots).\\
+\key{shuffle} & \opt{true} & Shuffle multiple-choice options.\\
+\key{shuffleparts} & \opt{false} & Shuffle the questions of every \env{parts}.\\
+\key{seed} & \opt{1} & Restart the random generator from this seed.\\
+\key{decimal} & \opt{.} & Decimal mark in the score boxes.\\
+\key{opacity} & \opt{12} & Intensity (\%) of the coloured score boxes.\\
+\key{grade-min}, \key{grade-max} & \opt{2}, \opt{10} & Lowest and highest grade
+  in the grade formula.\\
+\key{final} & \opt{compact} & Default style of \cs{finalscore}.\\
+\key{autoclose} & \opt{true} & Close automatically an exercise left open
+  (section~\ref{sec:exercises}).\\
+\end{keys}
+
+The header keys also accept Italian names: \key{materia}, \key{classe},
+\key{data}, \key{titolo}, \key{tipo}, \key{orari}, \key{recupero}, \key{voto}.
+
+%% ===========================================================================
+\section{The header}\label{sec:header}
+%% ===========================================================================
+
+\cs{testheader}\oarg{keys} starts a new test: it prints the header, resets
+exercise numbers and scores and increases the copy number. It accepts all the
+keys of \cs{testsetup}; the values given here hold for this test only.
+
+\subsection{Full header}
+
+\begin{example}
+\testheader[class=4M, date=20/03/2026,
+  title={Logaritmo, equazioni esponenziali e logaritmiche}]
+\end{example}
+
+\subsection{Compact header}
+
+\key{style=compact} uses about half the height. The title and the class share
+the first row, names and times share the second, the DSA boxes and the resit
+date go on an optional third row. A thin rule closes the header. When the
+title does not fit on the first row it moves, as a whole, to a row of its own
+(key \key{titlebreak}).
+
+\begin{example}
+\testheader[style=compact, class=4M, subject=physics,
+  title={Onde e acustica}, dsa=dsa, recovery=12/05/2026]
+\end{example}
+
+\subsection{DSA boxes, times, resits}
+
+\begin{itemize}[nosep]
+\item \key{dsa=dsa}: \emph{Schemi e calcolatrice}, \emph{Riduzione es./tempo
+  aggiuntivo}, \emph{Compensazione};
+\item \key{dsa=rid}: \emph{Uso della calcolatrice}, \emph{Uso di schemi/mappe},
+  \emph{Riduzione es./tempo aggiuntivo};
+\item \key{dsa=none}: no boxes.
+\end{itemize}
+\key{timing=false} removes the time fields (e.g.\ for oral tests);
+\key{recovery=}\meta{date} prints ``recupero del \meta{date}''.
+
+\begin{example}
+\testheader[class=4G, type=Interrogazione, subject=physics,
+  timing=false, date=02/02/2026]
+\end{example}
+
+%% ===========================================================================
+\section{Exercises}\label{sec:exercises}
+%% ===========================================================================
+
+\cs{exercise}\oarg{keys} prints the heading ``Esercizio $n$'' followed by the
+text of the exercise.
+
+\begin{keys}
+\key{diff} & --- & Difficulty from 1 to 3, shown as coloured squares.\\
+\key{title} & --- & A different heading, e.g.\ \opt{title=Test intermedi}.
+  \cs{exercise}\verb|[Test intermedi]| also works.\\
+\key{bonus} & off & Bonus exercise: heading ``Esercizio Bonus*'', points go to
+  the bonus, not to the total. \cs{bonusexercise} is a shortcut.\\
+\key{fixed}, \key{follow} & --- & Used only when exercises are shuffled
+  (section~\ref{sec:shuffle}).\\
+\end{keys}
+
+\subsection{Closing an exercise}
+
+\cs{exercisescore}\oarg{keys} closes the exercise and prints its score box on
+the right. Without options the score is the sum of the questions. Options:
+\key{pts} imposes the score (\cs{exercisescore}\verb|[5]| is the same as
+\verb|[pts=5]|), \key{label} changes the label (default E1, E2, \ldots),
+\key{short} makes the box narrower. For bonus exercises use
+\cs{bonusexercisescore}; \cs{bonusexercisenote} prints the explanatory note.
+
+If an exercise is not closed, the next \cs{exercise} or \cs{finalscore} closes
+it (key \key{autoclose}). Close it explicitly before a \cs{newpage}, otherwise
+the score box ends up at the top of the next page.
+
+\begin{example}
+\exercise[diff=2] Un'onda si propaga con velocità $v = \qty{340}{m/s}$.
+\begin{parts}
+  \itemx[pts=1] Calcola la lunghezza d'onda per $f = \qty{170}{Hz}$.
+  \itemx[pts=0.5] Come varia $\lambda$ se $f$ raddoppia?
+\end{parts}
+\exercisescore
+
+\exercise Spiega la differenza tra scala lineare e logaritmica.
+\exercisescore[2]
+
+\bonusexercise Determina il tempo di dimezzamento dello Iodio-131.
+\bonusexercisescore[0.5]
+\bonusexercisenote
+\end{example}
+
+%% ===========================================================================
+\section{Questions: the \env{parts} environment}
+%% ===========================================================================
+
+Questions are written inside \env{parts}, one \cs{itemx} each. Letters
+continue across several \env{parts} of the same exercise and restart at every
+\cs{exercise}. The score of each question appears at the right of its first
+line.
+
+\subsection{Options of \env{parts}}
+
+\begin{keys}
+\key{stretch} & \opt{1.5} & Spacing between questions, as a multiple of the
+  line height (\opt{1} = no extra space).\\
+\key{cols} & \opt{1} & Number of columns; questions fill the rows from left to
+  right.\\
+\key{start} & --- & Letter to start from (\opt{start=3} starts at ``c'').\\
+\key{ragged} & off & Ragged-right text instead of justified.\\
+\key{shuffle} & off & Shuffle the questions (section~\ref{sec:shuffle}).\\
+\end{keys}
+
+\subsection{Options of \cs{itemx}}
+
+\begin{keys}
+\key{pts} & --- & Points of the question; added to the exercise.\\
+\key{diff} & --- & Difficulty 1--3, squares at the left of the letter.\\
+\key{mark} & off & Highlight the letter.\\
+\key{upper} & off & Capital letter.\\
+\key{noreduced} & off & Leave the question out of the reduced version.\\
+\key{fixed}, \key{follow} & --- & For shuffled questions.\\
+\end{keys}
+
+\begin{example}
+\exercise Risolvi.
+\begin{parts}[cols=2, stretch=1.3]
+  \itemx[pts=1] $3^x - 2^x = 0$
+  \itemx[pts=1] $\log_{10}(2x-1) + \log_{10}(x) = 1$
+  \itemx[pts=1, diff=2] $e^{2x} - e^{x+1} = 0$
+  \itemx[pts=1, mark] $5 \cdot 2^x - 12 = 2^x$
+\end{parts}
+\end{example}
+
+\subsection{Graphs and questions side by side}
+
+\env{parts} works inside a \env{minipage}; the scores stay at the right edge
+of the minipage.
+
+\begin{example}
+\exercise Osserva il grafico.
+
+\begin{minipage}[c]{.36\linewidth}
+  \centering
+  \begin{ftplot}[xmin=-1.9, xmax=8.1, ymin=-3.9, ymax=3.1,
+                 width=5.5cm, height=5cm]
+    \fplot[domain=0.01:8]{ln(x)/ln(3)}
+  \end{ftplot}
+\end{minipage}\hfill
+\begin{minipage}[c]{.6\linewidth}
+  \begin{parts}[ragged]
+    \itemx[pts=1] Quale funzione è rappresentata?
+    \itemx[pts=1] Determina dominio e immagine.
+  \end{parts}
+\end{minipage}
+\end{example}
+
+\subsection{Reduced versions}
+
+Mark with \key{noreduced} the questions to leave out of the reduced (DSA)
+version, and compile with \cs{testsetup}\verb|{reduced}|. The omitted
+questions disappear, the following letters move up and their points are not
+counted. Full and reduced versions come from the same file.
+
+\begin{example}
+\testsetup{reduced}
+\exercise Rispondi.
+\begin{parts}
+  \itemx[pts=1] Primo quesito.
+  \itemx[pts=2, noreduced] Quesito omesso nella versione ridotta.
+  \itemx[pts=1] Terzo quesito, stampato come b.
+\end{parts}
+\exercisescore
+\testsetup{reduced=false}
+\end{example}
+
+%% ===========================================================================
+\section{Scores and grade}
+%% ===========================================================================
+
+\subsection{Score commands}
+
+\begin{cmds}
+\cs{score}\oarg{short}\marg{n} & Add $n$ points to the current exercise and
+  print the box. Inside \env{parts} use \key{pts} instead.\\
+\cs{invscore}\marg{n} & Add points without printing anything.\\
+\cs{scorebox}\oarg{short}\marg{n} & Print a box without adding points.\\
+\cs{emptyscorebox} & An empty box.\\
+\cs{exercisescore}\oarg{keys} & Close the exercise (section~\ref{sec:exercises}).\\
+\cs{currenttotal} & Total of the closed exercises so far.\\
+\cs{ResetAllScores} & Reset everything (done by \cs{testheader}).\\
+\end{cmds}
+
+Scores are computed with exact decimal arithmetic and printed with up to two
+decimals: $1 \to 1.0$, $0.75 \to 0.75$.
+
+\subsection{Final score: \cs{finalscore}}
+
+\cs{finalscore}\oarg{keys} closes the last exercise, prints the summary and
+resets the scores, ready for the next copy.
+
+\begin{keys}
+\key{style} & \opt{compact} & \opt{table}: table E1, E2, \ldots, EB, Tot.\ and
+  formula; \opt{compact}: formula and total on one line; \opt{formula}: formula
+  only; \opt{minimal}: total only; \opt{none}.\\
+\key{max} & sum & Maximum score shown, if different from the computed total.\\
+\key{bonus} & \opt{auto} & Bonus column in the table: \opt{auto} (only if there
+  are bonus points), \opt{true}, \opt{false}.\\
+\key{label} & \opt{Tot:} & Label of the total.\\
+\end{keys}
+
+The formula is
+$\text{voto} = \frac{\text{punti ottenuti}}{\text{punti massimi}}
+\cdot (\text{max} - \text{min}) + \text{min}$ with \key{grade-min} and
+\key{grade-max} of \cs{testsetup} (default $2$ and $10$).
+
+\begin{example}
+\exercise Primo. \begin{parts}\itemx[pts=2] a \itemx[pts=1.5] b\end{parts}
+\exercise Secondo. \begin{parts}\itemx[pts=3] c\end{parts}
+\bonusexercise Bonus. \bonusexercisescore[0.5]
+\finalscore[style=table]
+\end{example}
+
+\begin{example}
+\exercise Unico. \exercisescore[6]
+\finalscore
+\end{example}
+
+%% ===========================================================================
+\section{Multiple-choice questions}
+%% ===========================================================================
+
+\subsection{The \env{choices} environment}
+
+Inside \env{choices}, \cs{correct} starts the correct option and \cs{choice}
+a wrong one. Options are shuffled; the number of columns is chosen
+automatically: all on one row if they fit, otherwise two columns, otherwise
+one. Long options wrap with a hanging indent.
+
+\begin{example}
+\exercise Rispondi.
+\begin{parts}
+  \itemx[pts=1] Quale funzione ha dominio $x \ge -3$?
+    \begin{choices}
+      \correct $\sqrt{x+3}$
+      \choice  $\log(x+3)$
+      \choice  $e^{x+3}$
+      \choice  $\frac{1}{x+3}$
+    \end{choices}
+  \itemx[pts=1] Se $f(x)$ è una decrescita esponenziale, $\ln f(x)$ è
+    \begin{choices}
+      \correct una retta con pendenza negativa.
+      \choice  una retta con pendenza positiva.
+      \choice  una curva logaritmica decrescente.
+      \choice[fixed] nessuna delle precedenti.
+    \end{choices}
+\end{parts}
+\end{example}
+
+\subsection{Options}
+
+\begin{keys}
+\key{cols} & \opt{auto} & \opt{auto}, or a fixed number of columns.\\
+\key{shuffle} & \opt{true} & Shuffle the options (global default in
+  \cs{testsetup}).\\
+\key{labels} & \opt{box} & \opt{box} or \opt{letters}.\\
+\key{indent} & \opt{0pt} & Left indent (\cs{itmindent} outside \env{parts}).\\
+\key{before} & \opt{2pt} & Space above the options.\\
+\key{rowsep} & \opt{0pt} & Extra space between rows of options.\\
+\key{after} & \opt{.25em} & Space below the options.\\
+\end{keys}
+
+Options of a single choice:
+\cs{choice}\verb|[fixed]| keeps the option in its position (typically the last
+one, ``Nessuna delle precedenti''); \cs{correct}\verb|[if={v=2}]| makes the
+option correct only when the variant \opt{v} chosen by \cs{pick} is the second
+(section~\ref{sec:random}).
+
+Options can contain anything, including TikZ pictures.
+
+\subsection{Answer key and teacher copy}
+
+Every compilation writes the file \meta{document name}\texttt{.key.csv}, with
+one line per multiple-choice question:
+
+\begin{code}
+versione;esercizio;quesito;risposta
+1;2;b;C
+1;2;c;A
+2;2;b;B
+\end{code}
+
+\texttt{versione} is the copy number (one per \cs{testheader}),
+\texttt{esercizio} the exercise number (\texttt{B} for the bonus),
+\texttt{quesito} the letter of the question, \texttt{risposta} the letter of
+the correct option in the printed order. On Overleaf the file is in
+\emph{Logs and output files}.
+
+With the option \opt{answers} (or \cs{testsetup}\verb|{answers}|) the correct
+options are highlighted. Since the seed is the same, the teacher copy matches
+the student copies exactly.
+
+\begin{example}
+\testsetup{answers, labels=letters}
+\exercise Rispondi.
+\begin{parts}
+  \itemx[pts=1] Capitale d'Italia?
+    \begin{choices}
+      \correct Roma \choice Milano \choice Torino \choice[fixed] Nessuna
+    \end{choices}
+\end{parts}
+\begin{solution}
+Roma è la capitale dal 1871.
+\end{solution}
+\testsetup{answers=false, labels=box}
+\end{example}
+
+\subsection{Solutions}
+
+The \env{solution}\oarg{title} environment is printed only in the teacher copy
+(\opt{answers}); otherwise it is ignored. The default title is
+\emph{Soluzione}.
+
+%% ===========================================================================
+\section{Randomisation}\label{sec:random}
+%% ===========================================================================
+
+\subsection{The seed}
+
+All random choices (shuffled options, questions and exercises, \cs{pick},
+\cs{randint}, the old \textsf{fancylessons} commands) come from one
+generator. Its seed is fixed, so every compilation gives the same copies and
+the teacher copy and the answer key always match.
+
+\begin{cmds}
+\verb|\usepackage[seed=42]{fancytests}| & Seed of the whole document
+  (default \opt{1}).\\
+\cs{testsetup}\verb|{seed=42}| & Same; inside the document, it restarts the
+  generator from that point.\\
+\cs{setseed}\verb|{42}| & Restart the generator from 42 here (e.g.\ before each
+  class).\\
+\verb|seed=0| & A different seed at every compilation.\\
+\end{cmds}
+
+\note{Do not use \opt{seed=0} for a real test: the answer key and the teacher
+copy would only match the student copies of the same compilation. To get new
+variants, change the number.}
+
+\subsection{Variants and numbers}
+
+\begin{cmds}
+\cs{pick}\oarg{name}\verb|{a \or b \or c}| & One of the variants at random. With
+  a name, the choice is remembered for \cs{correct}\verb|[if={name=2}]|.\\
+\cs{randint}\oarg{name}\marg{min}\marg{max} & A random integer between min
+  and max, remembered with the name.\\
+\cs{useval}\marg{name} & Print again the number drawn with that name.\\
+\end{cmds}
+
+\begin{example}
+\exercise
+Per quale funzione \pick[d]{$\Dom f = (1, +\infty)$ \or $\Dom f = (-1, +\infty)$}
+si ha $\Ima f = \spR$?
+\begin{choices}
+  \correct[if={d=1}] $f(x) = -\ln(x - 1)$
+  \correct[if={d=2}] $f(x) = -\ln(x + 1)$
+  \choice $f(x) = -e^{x - 1}$
+  \choice $f(x) = e^{x + 1}$
+\end{choices}
+
+Calcola $\randint[a]{2}{9} \cdot \randint[b]{2}{9}$.
+Il risultato è $\useval{a} \cdot \useval{b} = \inteval{\useval{a}*\useval{b}}$.
+\end{example}
+
+\subsection{Shuffling blocks}
+
+The \env{shuffle}\oarg{name} environment shuffles a list of blocks, which are
+then printed with \cs{shuffled}\marg{name}\marg{position}. Useful for graphs or
+pictures to be placed in a random order.
+
+\begin{example}
+\begin{shuffle}[g]
+  \block{\tikz\draw[thick] (0,0) -- (1,1);}
+  \block{\tikz\draw[thick] (0,1) -- (1,0);}
+  \block{\tikz\draw[thick] (0,.5) -- (1,.5);}
+\end{shuffle}
+(a) \shuffled{g}{1} \qquad (b) \shuffled{g}{2} \qquad (c) \shuffled{g}{3}
+\end{example}
+
+\subsection{Shuffling questions and exercises}\label{sec:shuffle}
+
+\env{parts}\verb|[shuffle]| shuffles its questions (\cs{testsetup}%
+\verb|{shuffleparts}| does it for every \env{parts}). The environment
+\env{exercises} shuffles the exercises it contains. Letters and exercise
+numbers are assigned after shuffling; scores and the answer key follow.
+
+\begin{itemize}[nosep]
+\item \key{fixed} keeps a question or exercise in its position (counted among
+  the blocks: see below);
+\item \key{follow} ties it to the previous one, so they move together.
+\end{itemize}
+
+\begin{example}
+\exercise Rispondi.
+\begin{parts}[shuffle]
+  \itemx[pts=1] Uno.
+  \itemx[pts=1] Due.
+  \itemx[pts=1] Tre: osserva il grafico.
+  \itemx[pts=1, follow] Quattro: con riferimento al quesito precedente\dots
+  \itemx[pts=1, fixed] Cinque (sempre nella quinta posizione tra i blocchi).
+\end{parts}
+\end{example}
+
+\begin{code}
+\begin{exercises}
+  \exercise ...            % each exercise runs until the next \exercise
+  \exercise[fixed] ...     % stays in its place
+  \exercise[follow] ...    % moves together with the previous one
+\end{exercises}
+\end{code}
+
+Limitations:
+\begin{itemize}[nosep]
+\item a question tied with \key{follow} forms a block with the previous one;
+  \key{fixed} keeps the position among blocks, so letters after a block of two
+  move down by one;
+\item shuffled questions must not refer to each other by letter;
+\item inside \env{exercises}, \cs{exercise} must not be inside a
+  \env{minipage}; keep the bonus exercise outside the environment;
+\item \cs{verb} cannot be used inside \env{parts}.
+\end{itemize}
+
+\subsection{Several copies}
+
+\cs{Repeat}\marg{n}\marg{code} repeats a test $n$ times. Each \cs{testheader}
+starts a new copy with new random choices; \key{showversion} prints the copy
+number, which is also the \texttt{versione} column of the answer key.
+
+\begin{code}
+\newcommand{\verifica}{\input{docs/3-logaritmo/base}\newpage}
+\Repeat{6}{\verifica}
+\end{code}
+
+%% ===========================================================================
+\section{Graphs}
+%% ===========================================================================
+
+The \env{ftplot}\oarg{axis options} environment draws a function graph with
+the standard style \opt{ft}: centred axes, major and minor grid, thick black
+curves. Successive curves change style (solid, dashed, grey, dotted) so they
+can be told apart in black-and-white photocopies.
+
+\cs{fplot}\oarg{options}\marg{expression}\oarg{legend} adds a curve; the
+options are those of \cs{addplot} (\opt{domain}, \opt{samples}, \opt{dashed},
+\ldots). Any \textsf{pgfplots} option can be passed to \env{ftplot}.
+
+\begin{example}
+\begin{center}
+\begin{ftplot}[xmin=-4.9, xmax=5.1, ymin=-4.9, ymax=5.1, width=7cm, height=7cm]
+  \fplot[domain=-5:5]{e^x - 1}[A]
+  \fplot[domain=1.001:5]{-ln(x - 1)}[B]
+  \fplot[domain=-0.999:5]{ln(x + 1)}[C]
+  \fplot[domain=-5:-0.001]{ln(-x)}[D]
+\end{ftplot}
+\end{center}
+\end{example}
+
+The style can also be used in an ordinary \env{axis}:
+\verb|\begin{axis}[ft, xmode=log]|. The default number of samples is $80$;
+increase it with \opt{samples=150} for curves with sharp bends.
+
+%% ===========================================================================
+\section{Physics diagrams}
+%% ===========================================================================
+
+TikZ styles for physics diagrams:
+
+\begin{keys}
+\key{force} & --- & Thick red arrow.\\
+\key{velocity} & --- & Thick blue arrow.\\
+\key{vector} & --- & Generic black arrow.\\
+\key{axis arrow} & --- & Thin arrow for axes.\\
+\key{dimension} & --- & Two-headed arrow for lengths.\\
+\key{body} & --- & Outlined body with light fill (for nodes).\\
+\key{ground} & --- & Grey fill for floors, slopes, walls.\\
+\key{spring} & --- & Spring (coil).\\
+\key{continue}, \key{startcontinue}, \key{endcontinue} & \opt{.75em} &
+  Dotted continuation at both ends, at the start, at the end of a curve.\\
+\end{keys}
+
+\begin{example}
+\begin{center}
+\begin{tikzpicture}
+  \fill[ground] (0,0) -- (4,0) -- (4,2) -- cycle;
+  \draw[thick] (0,0) -- (4,0) -- (4,2) -- cycle;
+  \node[body, minimum size=6mm, rotate=26.57] (b) at (2.2,1.45) {};
+  \draw[force] (b.center) -- ++(0,-1.1) node[right] {$m\vb{g}$};
+  \draw[velocity] (b.north) -- ++(-0.9,-0.45) node[above] {$\vb{v}$};
+  \draw[dimension] (0,-.3) -- node[below] {$L$} (4,-.3);
+  \draw[spring] (5,0) -- (5,2);
+  \draw[thick, continue, domain=-1:1, samples=40] plot ({\x+7}, {\x*\x});
+\end{tikzpicture}
+\end{center}
+\end{example}
+
+%% ===========================================================================
+\section{Mathematics, units, text}
+%% ===========================================================================
+
+\begin{cmds}
+\cs{spN}, \cs{spZ}, \cs{spQ}, \cs{spR}\oarg{exp}, \cs{spC}\oarg{exp} &
+  $\spN, \spZ, \spQ, \spR, \spR[2], \spC$\\
+\cs{Dom}, \cs{Ima}, \cs{Sign} & $\Dom f$, $\Ima f$, $\Sign x$\\
+\cs{sen}, \cs{tg}, \cs{arcsen}, \cs{arctg} & $\sen x$, $\tg x$, $\arcsen x$,
+  $\arctg x$\\
+\cs{abs}\marg{x}, \cs{norm}\marg{x} & $\abs{x}$, $\norm{x}$\\
+\cs{eqdef}, \cs{eqq} & $\eqdef$, $\eqq$\\
+\cs{lesq}, \cs{gesq} & $\lesq$, $\gesq$\\
+\cs{vb}\marg{F}, \cs{vect}\marg{AB} & $\vb{F}$, $\vect{AB}$\\
+\cs{compacteq}, \cs{quitecompacteq}, \cs{notsocompacteq} & Reduce the space
+  around the next displayed equations (3, 6, 9\,pt).\\
+\cs{unm}\marg{u}, \cs{sunm}\oarg{exp}\marg{u}\marg{v} & Light units:
+  $3\unm{kg}$, $9.8\sunm[2]{m}{s}$. For full units use \textsf{siunitx}:
+  \cs{qty}\verb|{340}{m/s}| gives \qty{340}{m/s}.\\
+\midrule
+\cs{tbf}, \cs{tit}, \cs{tbfit}, \cs{trm} & Bold, italic, bold italic, roman.\\
+\cs{red}, \cs{bred}, \cs{blue}, \cs{bblue} & \red{red}, \bred{bold red},
+  \blue{blue}, \bblue{bold blue}.\\
+\cs{hlc}\oarg{colour}\marg{text}, \cs{highlight}\marg{text} & \hlc{grey
+  background}, \highlight{subject colour}.\\
+\cs{dotline}\marg{length} & A dotted line to fill in: \dotline{6em}\\
+\end{cmds}
+
+Colours: \textcolor{MathsBlue}{\texttt{MathsBlue}},
+\textcolor{PhysicsGreen}{\texttt{PhysicsGreen}}, \texttt{SubjectColor} (the
+colour of the current subject) and the colour-blind friendly palette
+\textcolor{FriendlyRed}{\texttt{FriendlyRed}},
+\textcolor{FriendlyOrange}{\texttt{FriendlyOrange}},
+\textcolor{FriendlyYellow}{\texttt{FriendlyYellow}},
+\textcolor{FriendlyGreen}{\texttt{FriendlyGreen}},
+\textcolor{FriendlyForest}{\texttt{FriendlyForest}},
+\textcolor{FriendlyBlue}{\texttt{FriendlyBlue}},
+\textcolor{FriendlyDenim}{\texttt{FriendlyDenim}},
+\textcolor{FriendlyMidnight}{\texttt{FriendlyMidnight}}.
+
+%% ===========================================================================
+\section{Compatibility with fancylessons}\label{sec:legacy}
+%% ===========================================================================
+
+With \verb|\usepackage[legacy]{fancytests}| the tests written with
+\textsf{fancylessons} compile without changes. The old commands are read only
+when the option is given, so they do not slow down new tests. In legacy mode
+exercises are not closed automatically, as in \textsf{fancylessons}.
+
+\begin{small}
+\renewcommand{\arraystretch}{1.25}
+\noindent
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{.47\linewidth}X@{}}
+\toprule
+\textbf{fancylessons} & \textbf{fancytests}\\ \midrule
+\cs{mathtestheader}\verb|[rec]{4M}{date}{title}(dsa)| &
+  \cs{testheader}\verb|[class=4M, date=..., title=..., dsa=dsa]|\\
+\cs{phystestheader}, \cs{physinttestheader}, \ldots &
+  \key{subject=physics}, \key{type=Interrogazione}, \key{timing=false}\\
+\verb|\begin{scoredlist}(1.5)<L>| \ldots\ \verb|& \score{1}\\| &
+  \verb|\begin{parts}[ragged]| \ldots\ \cs{itemx}\verb|[pts=1]|\\
+\env{splitlist}, \env{threesplitlist} & \env{parts}\verb|[cols=2]|,
+  \verb|[cols=3]|\\
+\cs{randomfouroptions}\verb|{a}{b}{c}{d}(.5)<L>|\verb+|0pt|+ &
+  \verb|\begin{choices} \correct a \choice b ...|\\
+\cs{randomfouroptionsline}, \ldots\verb|list|, \ldots\verb|plusone|\ldots &
+  \env{choices}\verb|[cols=4]|, \verb|[cols=1]|, \cs{choice}\verb|[fixed]|\\
+\cs{randOp}\verb|{a}{b}|, \cs{randOpThree}, \cs{randSign} &
+  \cs{pick}\verb|{a \or b}|, \cs{pick}\verb|{+ \or -}|\\
+\cs{randIntR}\verb|{1}{9}|, \cs{randInt} & \cs{randint}\verb|{1}{9}|\\
+\cs{pgfmathdeclarerandomlist} + \cs{prunelist} & \env{shuffle} +
+  \cs{shuffled}\\
+\cs{minimalfinalscore} + \cs{finalscorenotable} &
+  \cs{finalscore}\verb|[style=compact]|\\
+\cs{finalscorenotable} & \cs{finalscore}\verb|[style=formula]|\\
+\cs{overrideAllColors}\marg{c} & \cs{colorlet}\verb|{SubjectColor}{c}|\\
+\bottomrule
+\end{tabularx}
+\end{small}
+
+Also available in legacy mode: \env{tflist}, \env{splittflist},
+\env{tflistinv}, \cs{truefalse}, \cs{truefalseinv}, \cs{twooptions},
+\cs{fouroptions}, \cs{fouroptionslist}, \cs{fiveoptionslist},
+\cs{randomthreeoptionsline}, \cs{randomfiveoptions}(\texttt{line},
+\texttt{list}), \cs{randomfourplusoneoptionslist}, \cs{mathscore},
+\cs{physscore}, \cs{intermediatetest}, \cs{lengthof}, \cs{nthof},
+\env{notex*}, \cs{mathsol}, \cs{physsol} and the unit shortcuts
+\cs{unmeter}, \cs{unmpers}, \ldots
+
+\note{The old option macros do not know which option is correct, so their
+questions do not appear in the answer key. To use the key, rewrite them with
+\env{choices} and \cs{correct}.}
+
+%% ===========================================================================
+\section{A complete test}
+%% ===========================================================================
+
+\begin{code}
+\documentclass[10pt]{article}
+\usepackage[seed=2026]{fancytests}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\renewcommand*\familydefault{\sfdefault}
+\geometry{a4paper, top=15mm, bottom=15mm, left=17.5mm, right=17.5mm}
+\linespread{1.25}
+
+\testsetup{class=4M, dsa=none, style=compact, showversion}
+
+\newcommand{\verifica}{%
+  \testheader[date=20/03/2026, title={Logaritmi}]
+
+  \exercise Risolvi le seguenti equazioni.
+  \begin{parts}[cols=2, shuffle]
+    \itemx[pts=1] $3^x - 2^x = 0$
+    \itemx[pts=1] $\log_{10}(2x-1) + \log_{10}(x) = 1$
+    \itemx[pts=1, noreduced] $2^x + 2 = 0$
+    \itemx[pts=1, noreduced] $5 \cdot 2^x - 12 = 2^x$
+  \end{parts}
+
+  \exercise Rispondi.
+  \begin{parts}
+    \itemx[pts=1] Quale funzione è sempre crescente?
+      \begin{choices}
+        \correct $e^x$ \choice $e^{-x}$ \choice $-\ln x$
+        \choice[fixed] Nessuna
+      \end{choices}
+  \end{parts}
+  \begin{solution} $e^x$ è crescente perché la base è maggiore di 1. \end{solution}
+
+  \vfill
+  \finalscore
+  \newpage}
+
+\begin{document}
+\Repeat{4}{\verifica}          % 4 different copies
+% \testsetup{reduced}          % reduced (DSA) version
+% \usepackage[answers]{...}    % teacher copy: same seed, same copies
+\end{document}
+\end{code}
+
+\end{document}

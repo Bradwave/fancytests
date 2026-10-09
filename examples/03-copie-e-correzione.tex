@@ -1,0 +1,74 @@
+\documentclass[10pt]{article}
+
+%% Esempio 3 - Piu' copie diverse della stessa verifica.
+%% Ogni \testheader inizia una nuova copia: opzioni, quesiti ed esercizi
+%% vengono mescolati in modo diverso ma riproducibile (seme fisso).
+%% La chiave di correzione viene scritta in 03-copie-e-correzione.key.csv.
+%%
+%% Varianti utili:
+%%   \usepackage[seed=2026, answers]{fancytests}   copia docente (stesse copie)
+%%   \testsetup{reduced}                            versione ridotta (DSA)
+%%   seed=<altro numero>                            nuove varianti
+\usepackage[seed=2026]{fancytests}
+\usepackage{lmodern}
+\renewcommand*\familydefault{\sfdefault}
+\usepackage[T1]{fontenc}
+
+\geometry{a4paper, top=15mm, bottom=15mm, left=17.5mm, right=17.5mm}
+\linespread{1.25}
+
+\testsetup{class=4M, style=compact, labels=letters, showversion}
+
+\newcommand{\verifica}{%
+  \testheader[date=29/01/2026, title={Funzione esponenziale}]
+
+  \begin{exercises}
+    \exercise Risolvi le seguenti equazioni.
+    \begin{parts}[cols=2, shuffle]
+      \itemx[pts=1] $2^x = 8$
+      \itemx[pts=1] $3^{x+1} = 27$
+      \itemx[pts=1] $4^x = 2^{x+3}$
+      \itemx[pts=1, noreduced] $5^{2x} - 6 \cdot 5^x + 5 = 0$
+    \end{parts}
+
+    \exercise Rispondi ai seguenti quesiti.
+    \begin{parts}[shuffle]
+      \itemx[pts=1] La funzione $f(x) = \left(\frac{1}{2}\right)^x$ è
+        \begin{choices}
+          \correct decrescente su tutto $\spR$.
+          \choice  crescente su tutto $\spR$.
+          \choice  crescente solo per $x > 0$.
+          \choice[fixed] nessuna delle precedenti.
+        \end{choices}
+      \itemx[pts=1] Il grafico di $g(x) = 2^x - 3$ interseca l'asse $y$ nel punto
+        \begin{choices}
+          \correct $(0, -2)$ \choice $(0, -3)$ \choice $(0, 1)$ \choice $(0, 2)$
+        \end{choices}
+      \itemx[pts=1] Quanto vale $2^{\randint[a]{3}{6}}$?
+        \begin{choices}
+          \correct $\fpeval{2^\useval{a}}$
+          \choice  $\inteval{2*\useval{a}}$
+          \choice  $\fpeval{\useval{a}^2}$
+          \choice  $\fpeval{2^\useval{a} + 2}$
+        \end{choices}
+    \end{parts}
+    \begin{solution}
+      $2^{\useval{a}} = \fpeval{2^\useval{a}}$.
+    \end{solution}
+
+    \exercise Una coltura batterica raddoppia ogni ora; all'inizio contiene
+    $\randint[n]{2}{9} \cdot 10^3$ batteri.
+    \begin{parts}
+      \itemx[pts=1] Scrivi la funzione $N(t)$ che descrive la crescita.
+      \itemx[pts=1] Dopo quante ore i batteri superano $10^6$?
+    \end{parts}
+    \exercisescore
+  \end{exercises}
+
+  \vfill
+  \finalscore
+  \newpage}
+
+\begin{document}
+\Repeat{3}{\verifica}
+\end{document}

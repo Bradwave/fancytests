@@ -1,0 +1,121 @@
+\documentclass[10pt]{article}
+
+%% Esempio 1 - Verifica di matematica (intestazione completa).
+%% Mostra: quesiti su piu' colonne, grafici, risposta multipla con varianti,
+%% punteggi imposti, diagrammi di fisica, esercizio bonus, voto finale.
+%% Opzioni utili:  answers (copia docente), nofigures (bozza veloce),
+%%                 cache (figure in cache, serve shell-escape: attivo su Overleaf),
+%%                 legacy (vecchi comandi di fancylessons), seed=<n>.
+\usepackage[seed=2026]{fancytests}
+\usepackage{lmodern}
+\renewcommand*\familydefault{\sfdefault}
+\usepackage[T1]{fontenc}
+
+\geometry{a4paper, top=15mm, bottom=15mm, left=17.5mm, right=17.5mm}
+\linespread{1.25}
+
+% impostazioni comuni a tutte le verifiche della classe
+\testsetup{class=4M, dsa=none}
+
+\begin{document}
+
+\testheader[date=20/03/2026, title={Logaritmo, equazioni esponenziali e logaritmiche}]
+
+\exercise Risolvi le seguenti equazioni esponenziali e logaritmiche.
+
+% quesiti su due colonne; noreduced = omesso con \testsetup{reduced}
+\begin{parts}[cols=2]
+  \itemx[pts=1] $3^x - 2^x = 0$
+  \itemx[pts=1] $\log_{10}(2x - 1) + \log_{10}(x) = 1$
+  \itemx[pts=1] $3 \log_5(x - 2) = -3$
+  \itemx[pts=1] $e^{2x} - e^{x + 1} = 0$
+  \itemx[pts=1, noreduced] $2^x + 2 = 0$
+  \itemx[pts=1, noreduced] $5 \cdot 2^x - 12 = 2^x$
+\end{parts}
+
+\exercise Rispondi ai seguenti quesiti. Puoi motivare le risposte se lo desideri.
+
+\medskip
+\begin{minipage}[c]{.39\linewidth}
+  \centering
+  % grafico con lo stile standard (assi, griglia, curve per fotocopia)
+  \begin{ftplot}[xmin=-4.9, xmax=5.1, ymin=-4.9, ymax=5.1]
+    \fplot[domain=-5:5]{e^x - 1}[A]
+    \fplot[domain=1.001:5]{-ln(x - 1)}[B]
+    \fplot[domain=-0.999:5]{ln(x + 1)}[C]
+    \fplot[domain=-5:-0.001]{ln(-x)}[D]
+  \end{ftplot}
+\end{minipage}
+\hfill
+\begin{minipage}[c]{.6\linewidth}
+  \begin{parts}[ragged]
+    \itemx[pts=1] Associa ad ognuna delle seguenti funzioni il proprio grafico.
+      \begin{enumerate}[itemsep=.2em, topsep=2pt, label=\textbf{(\roman*)}]
+        \item $f(x) = e^x - 1$ \dotfill
+        \item $f(x) = \ln(-x)$ \dotfill
+      \end{enumerate}
+    % \pick sceglie una variante; la risposta giusta dipende dalla variante
+    \itemx[pts=1, diff=2] Per quale funzione \pick[dom]{$\Dom f = (1, +\infty)$ \or $\Dom f = (-1, +\infty)$}, $\Ima f = \spR$?
+      \begin{choices}
+        \correct[if={dom=1}] $f(x) = -\ln(x - 1)$
+        \correct[if={dom=2}] $f(x) = -\ln(x + 1)$
+        \choice $f(x) = -e^{x - 1}$
+        \choice $f(x) = e^{x + 1}$
+      \end{choices}
+  \end{parts}
+\end{minipage}
+
+\begin{parts}
+  \itemx[pts=1] Quale delle seguenti funzioni logaritmiche è rappresentata?
+    \begin{choices}
+      \correct $f(x) = \log_3(x)$
+      \choice $f(x) = \log_2(x)$
+      \choice $f(x) = \ln(x)$
+      \choice[fixed] Nessuna   % resta sempre in fondo
+    \end{choices}
+  \itemx[pts=1] Nel grafico è rappresentata l'equazione del razzo di Tsiolkovsky. Quale delle seguenti affermazioni è corretta?
+    \begin{choices}
+      \choice Per raddoppiare l'incremento di velocità $\Delta v$, occorre raddoppiare la massa iniziale $m_0$.
+      \choice $\Delta v$ cresce in modo lineare al crescere di $m_0$.
+      \correct Se $m_0 = m_f$, allora $\Delta v = 0$.
+      \choice Al decuplicare della massa iniziale, $\Delta v$ cresce di $10 \, \textrm{km/s}$.
+    \end{choices}
+  \itemx[pts=1] Quale deve essere la massa iniziale $m_0$?
+    \begin{choices}
+      \correct Circa $20\,000 \, \textrm{kg}$
+      \choice Circa $10\,000 \, \textrm{kg}$
+      \choice Circa $3\,000 \, \textrm{kg}$
+      \choice Circa $50\,000 \, \textrm{kg}$
+    \end{choices}
+\end{parts}
+
+\exercise L'organo della chiesa parrocchiale è accordato a $\qty{432}{Hz}$.
+\begin{parts}[stretch=1.25]
+  \itemx Qual è la frequenza del La5? E la frequenza del \pick{Re5 \or Fa5}?
+  \itemx Scrivi la definizione algebrica della funzione $f(n)$.
+\end{parts}
+\exercisescore[5]   % punteggio imposto (quesiti senza pts)
+
+\exercise[diff=3] Un blocco di massa $m$ è appoggiato su un piano inclinato.
+
+\begin{center}
+\begin{tikzpicture}
+  \fill[ground] (0,0) -- (4,0) -- (4,2) -- cycle;
+  \draw[thick] (0,0) -- (4,0) -- (4,2) -- cycle;
+  \node[body, minimum size=6mm, rotate=26.57] (b) at (2.2,1.45) {};
+  \draw[force] (b.center) -- ++(0,-1) node[right] {$m\vb{g}$};
+  \draw[spring] (4.6,0) -- (4.6,2);
+\end{tikzpicture}
+\end{center}
+\begin{parts}
+  \itemx[pts=2] Disegna il diagramma di corpo libero.
+\end{parts}
+
+\bonusexercise Determina il tempo di dimezzamento dello Iodio-131.
+\bonusexercisescore[0.5]
+\bonusexercisenote
+
+\vfill
+\finalscore   % stili: compact (predefinito), table, formula, minimal
+
+\end{document}

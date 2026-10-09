@@ -1,0 +1,1774 @@
+%% =========================================================================
+%%  fancytests.sty  --  verifiche di Matematica e Fisica
+%%  v2.0 (2026-10-09)  -  Matteo Bramardi
+%%  Erede snello di fancylessons.sty, solo per le verifiche.
+%%
+%%  This work may be distributed and/or modified under the conditions of
+%%  the LaTeX Project Public License, version 1.3c or later.
+%% =========================================================================
+%%
+%%  Opzioni del pacchetto (tutte facoltative):
+%%    subject   = math | physics   materia predefinita       (math)
+%%    plots     = true | false     carica pgfplots            (true)
+%%    units     = true | false     carica siunitx             (true)
+%%    seed      = <intero>         seme casuale; 0 = casuale  (1)
+%%    answers                      copia docente: risposte corrette evidenziate
+%%    nofigures                    bozza veloce: TikZ sostituito da riquadri
+%%    cache                        memoize: le figure vengono ricompilate solo
+%%                                 quando cambiano (prima compilazione lenta)
+%%    legacy                       carica i vecchi comandi di fancylessons
+%%
+%%  Overleaf: usare TeX Live 2023 o successivo (Menu > Impostazioni).
+%%  La chiave di correzione delle risposte multiple viene scritta in
+%%  <nomefile>.key.csv (su Overleaf: "Log e file di output").
+%%
+%%  Indice
+%%    1. Opzioni          6. Esercizi
+%%    2. Pacchetti        7. Quesiti (parts)
+%%    3. Colori e testo   8. Risposta multipla (choices)
+%%    4. Punteggi         9. Casualita' (pick, randint, shuffle)
+%%    5. Intestazione    10. Grafici, fisica, matematica, soluzioni
+%%                       11. Livello di compatibilita' (legacy)
+%% =========================================================================
+
+\NeedsTeXFormat{LaTeX2e}[2022-11-01]
+\ProvidesPackage{fancytests}[2026-10-09 v2.0 Verifiche di matematica e fisica]
+
+%% =========================================================================
+%% 1. Opzioni
+%% =========================================================================
+
+\newif\ifft@plots   \ft@plotstrue
+\newif\ifft@units   \ft@unitstrue
+\newif\ifft@cache
+\newif\ifft@nofig
+\newif\ifft@answers
+\newif\ifft@legacy
+\def\ft@seed{1}
+\def\ft@subjectopt{math}
+
+\ExplSyntaxOn
+\keys_define:nn { fancytests / options }
+  {
+    plots     .legacy_if_gset:n = ft@plots ,
+    units     .legacy_if_gset:n = ft@units ,
+    cache     .legacy_if_gset:n = ft@cache ,
+    nofigures .legacy_if_gset:n = ft@nofig ,
+    answers   .legacy_if_gset:n = ft@answers ,
+    legacy    .legacy_if_gset:n = ft@legacy ,
+    plots     .default:n = true ,
+    units     .default:n = true ,
+    cache     .default:n = true ,
+    nofigures .default:n = true ,
+    answers   .default:n = true ,
+    legacy    .default:n = true ,
+    seed      .tl_gset:N = \ft@seed ,
+    subject   .tl_gset:N = \ft@subjectopt ,
+  }
+\ExplSyntaxOff
+\ProcessKeyOptions[fancytests/options]
+
+%% =========================================================================
+%% 2. Pacchetti (solo quelli indispensabili: ogni pacchetto costa tempo)
+%% =========================================================================
+
+\RequirePackage[italian]{babel}
+\RequirePackage{geometry}
+\RequirePackage{amsmath,amssymb,mathtools}
+\RequirePackage{array,tabularx,booktabs}
+\RequirePackage{enumitem}
+\RequirePackage{xcolor}
+\RequirePackage{bm,cancel}
+\ifft@cache \RequirePackage[extract=tex]{memoize}\fi
+\RequirePackage{tikz}
+\usetikzlibrary{arrows.meta,calc,babel,decorations.pathmorphing,decorations.markings}
+\ifft@plots
+  \RequirePackage{pgfplots}
+  \pgfplotsset{compat=1.18}
+\fi
+\ifft@units
+  \RequirePackage{siunitx}
+  \sisetup{output-decimal-marker={,}, group-separator={\,}}
+\fi
+
+\setlength{\parindent}{0pt}
+
+%% =========================================================================
+%% 3. Colori e scorciatoie di testo
+%% =========================================================================
+
+\definecolor{MathsBlue}{HTML}{3F80EA}
+\definecolor{PhysicsGreen}{HTML}{1D883C}
+\definecolor{FriendlyOrange}{HTML}{FD8B28}
+\definecolor{FriendlyBlue}{HTML}{1484E6}
+\definecolor{FriendlyGreen}{HTML}{60EAA8}
+\definecolor{FriendlyForest}{HTML}{5CB58B}
+\definecolor{FriendlyMidnight}{HTML}{3B4565}
+\definecolor{FriendlyDenim}{HTML}{116BB9}
+\definecolor{FriendlyRed}{HTML}{D83422}
+\definecolor{FriendlyYellow}{HTML}{F7CF29}
+\colorlet{SubjectColor}{MathsBlue}
+
+\newcommand*{\tbf}[1]{\textbf{#1}}
+\newcommand*{\tit}[1]{\textit{#1}}
+\newcommand*{\tbfit}[1]{\textbf{\textit{#1}}}
+\newcommand*{\trm}[1]{\textrm{#1}}
+\newcommand*{\red}[1]{\textcolor{FriendlyRed}{#1}}
+\newcommand*{\bred}[1]{\textcolor{FriendlyRed}{\textbf{#1}}}
+\newcommand*{\blue}[1]{\textcolor{FriendlyDenim}{#1}}
+\newcommand*{\bblue}[1]{\textcolor{FriendlyDenim}{\textbf{#1}}}
+\newcommand*{\hlc}[2][black!5]{\colorbox{#1}{#2}}
+\newcommand*{\highlight}[1]{\colorbox{SubjectColor!15}{#1}}
+
+% Riga puntinata da compilare:  \dotline{12em}
+\newcommand*{\dotline}[2][5pt]{\hbox to #2{\leaders\hbox to #1{\hss.\hss}\hfil}}
+
+% Rientri usati da elenchi e opzioni
+\newcommand*{\itmindent}{1.125em}
+\newcommand*{\questionindent}{0.75em}
+
+% Ripete un blocco n volte (copie della stessa verifica)
+\ExplSyntaxOn
+\cs_new_eq:NN \Repeat \prg_replicate:nn
+\ExplSyntaxOff
+
+%% =========================================================================
+%% 4. Motore dei punteggi
+%% =========================================================================
+%%  \score[short]{1.5}     punteggio di un quesito (stampa il riquadro)
+%%  \invscore{1}           punteggio invisibile
+%%  \exercisescore         chiude l'esercizio (somma automatica)
+%%  \exercisescore[2]      ... con punteggio imposto  (o [pts=2, label=X])
+%%  \finalscore[style=...] tabella / formula del voto
+
+\ExplSyntaxOn
+
+\fp_new:N  \g__ft_ex_fp        % esercizio corrente
+\fp_new:N  \g__ft_total_fp     % totale (esclusi bonus)
+\fp_new:N  \g__ft_bonus_fp     % bonus
+\fp_new:N  \g__ft_saved_fp
+\seq_new:N \g__ft_exscores_seq % punteggi E1, E2, ...
+\int_new:N \g__ft_ex_int       % numero esercizio corrente
+\int_new:N \g__ft_version_int  % numero della copia (1 per intestazione)
+\bool_new:N \g__ft_ex_open_bool
+\bool_new:N \g__ft_ex_bonus_bool
+\bool_new:N \g__ft_inparts_bool
+\tl_new:N  \l__ft_fmt_tl
+
+\tl_new:N \g__ft_decimal_tl      \tl_gset:Nn \g__ft_decimal_tl {.}
+\tl_new:N \g__ft_opacity_tl      \tl_gset:Nn \g__ft_opacity_tl {12}
+\tl_new:N \g__ft_grademin_tl     \tl_gset:Nn \g__ft_grademin_tl {2}
+\tl_new:N \g__ft_grademax_tl     \tl_gset:Nn \g__ft_grademax_tl {10}
+\bool_new:N \g__ft_autoclose_bool \bool_gset_true:N \g__ft_autoclose_bool
+
+% Formatta un numero: 1 -> 1,0   0.75 -> 0,75
+\cs_new_protected:Npn \__ft_fmt:n #1
+  {
+    \tl_set:Nx \l__ft_fmt_tl { \fp_eval:n { round( #1 , 2 ) } }
+    \tl_if_in:NnF \l__ft_fmt_tl { . } { \tl_put_right:Nn \l__ft_fmt_tl { .0 } }
+    \tl_replace_once:NnV \l__ft_fmt_tl { . } \g__ft_decimal_tl
+  }
+
+% Riquadro colorato  "    /1,0"
+\cs_new_protected:Npn \__ft_box:nn #1#2
+  {
+    \__ft_fmt:n {#2}
+    \colorbox { SubjectColor ! \g__ft_opacity_tl }
+      {
+        \scriptsize \ttfamily
+        \str_if_eq:eeTF {#1} { short } { \hspace{1.5em} } { \hspace{2em} }
+        / \l__ft_fmt_tl
+      }
+  }
+\NewDocumentCommand \scorebox { O{} m } { \__ft_box:nn {#1} {#2} }
+\NewDocumentCommand \emptyscorebox { }
+  { \colorbox { SubjectColor ! \g__ft_opacity_tl } { \scriptsize \ttfamily \hspace{2.9em} } }
+
+\NewDocumentCommand \AddScore { m } { \fp_gadd:Nn \g__ft_ex_fp {#1} }
+\NewDocumentCommand \SubScore { m } { \fp_gsub:Nn \g__ft_ex_fp {#1} }
+\NewDocumentCommand \ResetScore { } { \fp_gzero:N \g__ft_ex_fp }
+\NewDocumentCommand \DisplayScore { } { \fp_to_decimal:N \g__ft_ex_fp }
+\NewDocumentCommand \DisplayTotal { } { \fp_to_decimal:N \g__ft_total_fp }
+\NewDocumentCommand \SaveCurrentScore { } { \fp_gset_eq:NN \g__ft_saved_fp \g__ft_ex_fp }
+\NewDocumentCommand \SetScoreToSaved { } { \fp_gset_eq:NN \g__ft_ex_fp \g__ft_saved_fp }
+
+\NewDocumentCommand \score { O{} m } { \fp_gadd:Nn \g__ft_ex_fp {#2} \__ft_box:nn {#1} {#2} }
+\NewDocumentCommand \invscore { m } { \fp_gadd:Nn \g__ft_ex_fp {#1} }
+
+% --- chiusura esercizio -----------------------------------------------------
+\keys_define:nn { fancytests / exscore }
+  {
+    pts   .tl_set:N = \l__ft_exs_pts_tl ,
+    label .tl_set:N = \l__ft_exs_label_tl ,
+    short .bool_set:N = \l__ft_exs_short_bool ,
+  }
+
+\cs_new_protected:Npn \__ft_exscore:n #1
+  {
+    \tl_clear:N \l__ft_exs_pts_tl
+    \tl_clear:N \l__ft_exs_label_tl
+    \bool_set_false:N \l__ft_exs_short_bool
+    \tl_if_blank:nF {#1}
+      {
+        \tl_if_in:nnTF {#1} { = }
+          { \keys_set:nn { fancytests / exscore } {#1} }
+          { \tl_set:Nn \l__ft_exs_pts_tl {#1} }      % sintassi vecchia: [2.0]
+      }
+    \tl_if_empty:NT \l__ft_exs_pts_tl
+      { \tl_set:Nx \l__ft_exs_pts_tl { \fp_to_decimal:N \g__ft_ex_fp } }
+    \bool_if:NTF \g__ft_ex_bonus_bool
+      {
+        \fp_gadd:Nn \g__ft_bonus_fp { \l__ft_exs_pts_tl }
+        \tl_if_empty:NT \l__ft_exs_label_tl { \tl_set:Nn \l__ft_exs_label_tl { EB } }
+      }
+      {
+        \fp_gadd:Nn \g__ft_total_fp { \l__ft_exs_pts_tl }
+        \seq_gput_right:Nx \g__ft_exscores_seq { \fp_eval:n { \l__ft_exs_pts_tl } }
+        \tl_if_empty:NT \l__ft_exs_label_tl
+          { \tl_set:Nx \l__ft_exs_label_tl { E \int_use:N \g__ft_ex_int } }
+      }
+    \par \nobreak \noindent \hfill
+    { \small \bfseries \l__ft_exs_label_tl {:} } ~
+    \__ft_box:nn { \bool_if:NT \l__ft_exs_short_bool { short } } { \l__ft_exs_pts_tl }
+    \par
+    \fp_gzero:N \g__ft_ex_fp
+    \bool_gset_false:N \g__ft_ex_open_bool
+    \bool_gset_false:N \g__ft_ex_bonus_bool
+  }
+\NewDocumentCommand \exercisescore { O{} } { \__ft_exscore:n {#1} }
+\NewDocumentCommand \bonusexercisescore { O{} }
+  { \bool_gset_true:N \g__ft_ex_bonus_bool \__ft_exscore:n {#1} }
+
+% chiusura automatica di un esercizio dimenticato aperto
+\cs_new_protected:Npn \__ft_autoclose:
+  {
+    \bool_if:nT { \g__ft_ex_open_bool && \g__ft_autoclose_bool }
+      { \__ft_exscore:n { } }
+  }
+
+\cs_new_protected:Npn \__ft_reset_all:
+  {
+    \seq_gclear:N \g__ft_exscores_seq
+    \fp_gzero:N \g__ft_ex_fp
+    \fp_gzero:N \g__ft_total_fp
+    \fp_gzero:N \g__ft_bonus_fp
+    \int_gzero:N \g__ft_ex_int
+    \bool_gset_false:N \g__ft_ex_open_bool
+    \bool_gset_false:N \g__ft_ex_bonus_bool
+  }
+\NewDocumentCommand \ResetAllScores { } { \__ft_reset_all: }
+
+% --- voto finale ------------------------------------------------------------
+\keys_define:nn { fancytests / final }
+  {
+    style .choices:nn = { table , compact , formula , minimal , none }
+                        { \tl_set_eq:NN \l__ft_fin_style_tl \l_keys_choice_tl } ,
+    max   .tl_set:N   = \l__ft_fin_max_tl ,
+    bonus .choices:nn = { auto , true , false }
+                        { \tl_set_eq:NN \l__ft_fin_bonus_tl \l_keys_choice_tl } ,
+    label .tl_set:N   = \l__ft_fin_label_tl ,
+  }
+\tl_new:N \l__ft_fin_style_tl
+\tl_new:N \l__ft_fin_bonus_tl
+\tl_new:N \g__ft_finstyle_default_tl \tl_gset:Nn \g__ft_finstyle_default_tl { compact }
+\tl_new:N \l__ft_tab_spec_tl
+\tl_new:N \l__ft_tab_head_tl
+\tl_new:N \l__ft_tab_body_tl
+\int_new:N \l__ft_tab_int
+
+\cs_new:Npn \__ft_max_tl:
+  { \tl_if_empty:NTF \l__ft_fin_max_tl { \fp_to_decimal:N \g__ft_total_fp } { \l__ft_fin_max_tl } }
+
+\cs_new_protected:Npn \__ft_formula:
+  {
+    \__ft_fmt:n { \__ft_max_tl: }
+    $ \textrm{voto} = \dfrac{\textrm{punti~ottenuti}}{\textrm{punti~massimi}}
+      \cdot \fp_eval:n { \g__ft_grademax_tl - \g__ft_grademin_tl } + \g__ft_grademin_tl
+      = \dfrac{\hspace{1.5em}}{\l__ft_fmt_tl}
+      \cdot \fp_eval:n { \g__ft_grademax_tl - \g__ft_grademin_tl } + \g__ft_grademin_tl
+      = \qquad\quad $
+  }
+
+\cs_new_protected:Npn \__ft_final_table:
+  {
+    \tl_clear:N \l__ft_tab_spec_tl
+    \tl_clear:N \l__ft_tab_head_tl
+    \tl_clear:N \l__ft_tab_body_tl
+    \int_zero:N \l__ft_tab_int
+    \seq_map_inline:Nn \g__ft_exscores_seq
+      {
+        \int_incr:N \l__ft_tab_int
+        \int_compare:nNnF \l__ft_tab_int = 1
+          {
+            \tl_put_right:Nn \l__ft_tab_spec_tl { | }
+            \tl_put_right:Nn \l__ft_tab_head_tl { & }
+            \tl_put_right:Nn \l__ft_tab_body_tl { & }
+          }
+        \tl_put_right:Nn \l__ft_tab_spec_tl { c }
+        \tl_put_right:Nx \l__ft_tab_head_tl { \exp_not:N \textbf { E \int_use:N \l__ft_tab_int } }
+        \tl_put_right:Nn \l__ft_tab_body_tl { \scorebox {##1} }
+      }
+    \bool_if:nT
+      {
+        \str_if_eq_p:Vn \l__ft_fin_bonus_tl { true } ||
+        ( \str_if_eq_p:Vn \l__ft_fin_bonus_tl { auto } &&
+          \fp_compare_p:nNn \g__ft_bonus_fp > 0 )
+      }
+      {
+        \tl_put_right:Nn  \l__ft_tab_spec_tl { | c }
+        \tl_put_right:Nn  \l__ft_tab_head_tl { & \textbf{EB} }
+        \tl_put_right:Nx  \l__ft_tab_body_tl
+          { & \exp_not:N \scorebox { \fp_to_decimal:N \g__ft_bonus_fp } }
+      }
+    \tl_put_right:Nn \l__ft_tab_spec_tl { | c }
+    \tl_put_right:Nn \l__ft_tab_head_tl { & \textbf{Tot.} }
+    \tl_put_right:Nx \l__ft_tab_body_tl { & \exp_not:N \scorebox { \__ft_max_tl: } }
+    \use:x
+      {
+        \exp_not:N \begin{tabular} { \exp_not:V \l__ft_tab_spec_tl }
+          \exp_not:V \l__ft_tab_head_tl \exp_not:N \\ \exp_not:N \hline
+          \exp_not:V \l__ft_tab_body_tl
+        \exp_not:N \end{tabular}
+      }
+  }
+
+\NewDocumentCommand \finalscore { O{} }
+  {
+    \__ft_autoclose:
+    \tl_set_eq:NN \l__ft_fin_style_tl \g__ft_finstyle_default_tl
+    \tl_set:Nn \l__ft_fin_bonus_tl { auto }
+    \tl_clear:N \l__ft_fin_max_tl
+    \tl_set:Nn \l__ft_fin_label_tl { Tot: }
+    \keys_set:nn { fancytests / final } {#1}
+    \par
+    \str_case:Vn \l__ft_fin_style_tl
+      {
+        { table }
+          {
+            \begin{center}
+              \__ft_final_table: \par \medskip
+              \__ft_formula:
+            \end{center}
+          }
+        { compact }
+          {
+            \noindent
+            \makebox[\linewidth]
+              {
+                \hfill \colorbox { SubjectColor ! \g__ft_opacity_tl } { \__ft_formula: }
+                \hfill \llap { \textbf { \l__ft_fin_label_tl } ~ \scorebox { \__ft_max_tl: } }
+              }
+          }
+        { formula }
+          {
+            \begin{center}
+              \colorbox { SubjectColor ! \g__ft_opacity_tl } { \__ft_formula: }
+            \end{center}
+          }
+        { minimal }
+          { \noindent \hfill \textbf { \l__ft_fin_label_tl } ~ \scorebox { \__ft_max_tl: } }
+        { none } { }
+      }
+    \par
+    \__ft_reset_all:
+  }
+
+% Punteggio totale corrente (es. per scriverlo nel testo)
+\NewDocumentCommand \currenttotal { } { \__ft_fmt:n { \g__ft_total_fp } \l__ft_fmt_tl }
+
+\ExplSyntaxOff
+
+%% =========================================================================
+%% 5. Impostazioni generali e intestazione
+%% =========================================================================
+%%  \testsetup{class=4M, subject=physics, dsa=rid, ...}   (preambolo)
+%%  \testheader[date=22/05/2026, title={Onde}]
+%%  \testheader[style=compact, ...]        intestazione su due/tre righe
+%%    titlebreak=auto|always|never  titolo lungo su una riga propria (auto)
+%%  Chiavi accettate anche in italiano: materia, classe, data, titolo, tipo,
+%%  orari, recupero, voto.
+
+\newif\ifft@timing   \ft@timingtrue
+\newif\ifft@showversion
+\newif\ifft@reduced
+\def\ft@subject{}\def\ft@class{}\def\ft@date{}\def\ft@title{}
+\def\ft@type{Verifica}\def\ft@dsa{none}\def\ft@recovery{}\def\ft@gradebox{VOTO}
+\def\ft@labels{box}\def\ft@hstyle{full}\def\ft@tbreak{auto}
+
+\ExplSyntaxOn
+\bool_new:N \g__ft_shuffle_bool \bool_gset_true:N \g__ft_shuffle_bool
+\keys_define:nn { fancytests / test }
+  {
+    subject     .code:n   = \__ft_set_subject:n {#1} ,
+    materia     .code:n   = \__ft_set_subject:n {#1} ,
+    class       .tl_set:N = \ft@class ,     classe   .tl_set:N = \ft@class ,
+    date        .tl_set:N = \ft@date ,      data     .tl_set:N = \ft@date ,
+    title       .tl_set:N = \ft@title ,     titolo   .tl_set:N = \ft@title ,
+    type        .tl_set:N = \ft@type ,      tipo     .tl_set:N = \ft@type ,
+    recovery    .tl_set:N = \ft@recovery ,  recupero .tl_set:N = \ft@recovery ,
+    gradebox    .tl_set:N = \ft@gradebox ,  voto     .tl_set:N = \ft@gradebox ,
+    dsa         .code:n = { \tl_if_blank:nTF {#1} { \def \ft@dsa {none} } { \def \ft@dsa {#1} } } ,
+    timing      .legacy_if_set:n = ft@timing ,  orari .legacy_if_set:n = ft@timing ,
+    showversion .legacy_if_set:n = ft@showversion ,
+    showversion .default:n = true ,
+    answers     .legacy_if_set:n = ft@answers ,
+    answers     .default:n = true ,
+    reduced     .legacy_if_set:n = ft@reduced ,
+    reduced     .default:n = true ,
+    style       .choices:nn = { full , compact }
+                  { \tl_set_eq:NN \ft@hstyle \l_keys_choice_tl } ,
+    titlebreak  .choices:nn = { auto , always , never }
+                  { \tl_set_eq:NN \ft@tbreak \l_keys_choice_tl } ,
+    labels      .choices:nn = { box , letters }
+                  { \tl_set_eq:NN \ft@labels \l_keys_choice_tl } ,
+    shuffle     .bool_gset:N = \g__ft_shuffle_bool ,
+    decimal     .tl_gset:N = \g__ft_decimal_tl ,
+    opacity     .tl_gset:N = \g__ft_opacity_tl ,
+    grade-min   .tl_gset:N = \g__ft_grademin_tl ,
+    grade-max   .tl_gset:N = \g__ft_grademax_tl ,
+    autoclose   .bool_gset:N = \g__ft_autoclose_bool ,
+    final       .tl_gset:N = \g__ft_finstyle_default_tl ,
+    shuffleparts .bool_gset:N = \g__ft_shuffleparts_bool ,
+    shuffleparts .default:n  = true ,
+    seed        .code:n = { \tl_gset:Nn \ft@seed {#1} \setseed {#1} } ,
+  }
+
+\cs_new_protected:Npn \__ft_set_subject:n #1
+  {
+    \str_case_e:nnF { \str_lowercase:f {#1} }
+      {
+        { math }       { \def \ft@subject {Matematica} \xglobal \colorlet{SubjectColor}{MathsBlue} }
+        { maths }      { \def \ft@subject {Matematica} \xglobal \colorlet{SubjectColor}{MathsBlue} }
+        { matematica } { \def \ft@subject {Matematica} \xglobal \colorlet{SubjectColor}{MathsBlue} }
+        { physics }    { \def \ft@subject {Fisica} \xglobal \colorlet{SubjectColor}{PhysicsGreen} }
+        { phys }       { \def \ft@subject {Fisica} \xglobal \colorlet{SubjectColor}{PhysicsGreen} }
+        { fisica }     { \def \ft@subject {Fisica} \xglobal \colorlet{SubjectColor}{PhysicsGreen} }
+      }
+      { \def \ft@subject {#1} }
+  }
+\__ft_set_subject:n { \ft@subjectopt }
+
+\NewDocumentCommand \testsetup { m } { \keys_set:nn { fancytests / test } {#1} }
+
+% bridge per il codice di impaginazione
+\cs_new:Npn \ft@version { \int_use:N \g__ft_version_int }
+\cs_new:Npn \ft@opacity { \g__ft_opacity_tl }
+\cs_new_protected:Npn \ft@newtest
+  {
+    \__ft_autoclose:
+    \__ft_reset_all:
+    \int_gincr:N \g__ft_version_int
+    \setcounter{ftpart}{0}
+  }
+\NewDocumentCommand \testheader { O{} }
+  {
+    \pagestyle{empty} \thispagestyle{empty}
+    % colore della materia impostata con \testsetup (una materia data solo
+    % all'intestazione precedente non deve restare attiva)
+    \__ft_set_subject:n { \ft@subject }
+    \group_begin:
+    \keys_set:nn { fancytests / test } {#1}
+    \ft@newtest
+    \str_if_eq:VnTF \ft@hstyle { compact } { \ft@header@compact } { \ft@header@layout }
+    \group_end:
+  }
+\ExplSyntaxOff
+
+\newcommand*{\ft@blankdate}{%
+  \textcolor{black!30}{\_\_}/\textcolor{black!30}{\_\_}/\textcolor{black!30}{\_\_\_\_}}
+
+\newcommand*{\ft@dsabox}{%
+  \def\ft@tmp{dsa}\ifx\ft@dsa\ft@tmp
+    \scriptsize
+    \begin{tabular}[t]{@{}c@{\hspace{.75em}}l@{}}
+      $\square$ & Schemi e calcolatrice\\[-.1em]
+      $\square$ & Riduzione es./tempo aggiuntivo\\[-.1em]
+      $\square$ & Compensazione \dotline{5.5em}
+    \end{tabular}%
+  \else\def\ft@tmp{rid}\ifx\ft@dsa\ft@tmp\ft@dsaridbox
+  \else\def\ft@tmp{dsarid}\ifx\ft@dsa\ft@tmp\ft@dsaridbox
+  \fi\fi\fi}
+\newcommand*{\ft@dsaridbox}{%
+  \scriptsize
+  \begin{tabular}[t]{@{}c@{\hspace{.75em}}l@{}}
+    $\square$ & Uso della calcolatrice\\[-.1em]
+    $\square$ & Uso di schemi/mappe\\[-.1em]
+    $\square$ & Riduzione es./tempo aggiuntivo
+  \end{tabular}}
+
+\newcommand*{\ft@header@layout}{%
+  % righe facoltative, preparate fuori dalla tabella
+  \ifft@timing
+    \def\ft@timingrow{\\[.4em]
+      Ora inizio: & \dotline{4em}$\!\!\!\rightarrow\;$Ora fine:\;\;\dotline{4em} &
+      {\setlength{\fboxsep}{.1em}%
+       \colorbox{SubjectColor!\ft@opacity}{\small
+         \begin{tabular}{@{}l l@{}}Ora consegna: & \dotline{4em}\end{tabular}}}}%
+  \else\let\ft@timingrow\relax\fi
+  \ifx\ft@recovery\@empty\let\ft@recoveryrow\relax
+  \else
+    \ifft@timing
+      \def\ft@recoveryrow{%
+        & {\footnotesize\begin{tabular}{@{}r@{}}recupero del\\[-.4em]\ft@recovery\end{tabular}}}%
+    \else
+      \def\ft@recoveryrow{\\[.4em] & & &
+        {\footnotesize\begin{tabular}{@{}r@{}}recupero del\\[-.4em]\ft@recovery\end{tabular}}}%
+    \fi
+  \fi
+  \par\noindent
+  \begin{tabularx}{\textwidth}{@{}l l l>{\raggedleft\arraybackslash}X@{}}
+    Nome: & \dotline{12em} &
+      \smash{\raisebox{0pt}[0pt][0pt]{\ft@dsabox}} &
+      \textbf{Classe \ft@class}%
+      \ifft@showversion\ {\color{black!40}\footnotesize\#\ft@version}\fi\\[.4em]
+    Cognome: & \dotline{12em} & &
+      \ifx\ft@date\@empty\ft@blankdate\else\ft@date\fi
+    \ft@timingrow
+    \ft@recoveryrow
+  \end{tabularx}%
+  \par\ifft@timing\vspace{-.5em}\else\vspace{.5em}\fi
+  \noindent
+  \begin{minipage}[c]{.85\textwidth}
+    \centering
+    {\LARGE\bfseries \ft@type\ di \ft@subject\par}%
+    \ifx\ft@title\@empty\else\vspace{.15em}\ft@title\par\fi
+  \end{minipage}%
+  \hfill
+  \begin{minipage}[c]{.14\textwidth}
+    \hfill
+    \begin{tabular}{|@{\quad}c@{\quad}|}
+      \hline {\small\bfseries\ft@gradebox}\\[0pt] \hline \\[1.5em] \\ \hline
+    \end{tabular}%
+  \end{minipage}%
+  \par\vspace{.25em}}
+
+% --- intestazione compatta: \testheader[style=compact] ------------------------
+\newcommand*{\ft@dsainline}{%
+  \def\ft@tmp{dsa}\ifx\ft@dsa\ft@tmp
+    $\square$~Schemi e calcolatrice\quad
+    $\square$~Riduzione es./tempo aggiuntivo\quad
+    $\square$~Compensazione \dotline{4em}%
+  \else\def\ft@tmp{none}\ifx\ft@dsa\ft@tmp\else
+    $\square$~Uso della calcolatrice\quad
+    $\square$~Uso di schemi/mappe\quad
+    $\square$~Riduzione es./tempo aggiuntivo%
+  \fi\fi}
+\newsavebox{\ft@hbox}
+\newsavebox{\ft@tbox}
+\newif\ifft@titlebreak
+% separatore: sottile barra verticale grigia
+\newcommand*{\ft@sqsep}{%
+  \enspace{\color{black!35}\rule[-.2ex]{.4pt}{1.9ex}}\enspace}
+\newcommand*{\ft@header@compact}{%
+  \par\noindent
+  \begin{minipage}[c]{\dimexpr\textwidth-5.5em\relax}
+    % riga 1: titolo (va a capo se lungo), classe e data allineate a destra
+    \sbox\ft@hbox{\textbf{Classe \ft@class}%
+      \ifft@showversion\ {\color{black!40}\footnotesize\#\ft@version}\fi
+      \ft@sqsep
+      \ifx\ft@date\@empty\ft@blankdate\else\ft@date\fi}%
+    % titolo: sulla stessa riga se ci sta, altrimenti su una riga propria
+    \sbox\ft@tbox{{\Large\bfseries \ft@type\ di \ft@subject}%
+      \ifx\ft@title\@empty\else\quad{\large \ft@title}\fi}%
+    \ft@titlebreakfalse
+    \ifx\ft@title\@empty\else
+      \def\ft@tmp{always}\ifx\ft@tbreak\ft@tmp\ft@titlebreaktrue\fi
+      \def\ft@tmp{auto}\ifx\ft@tbreak\ft@tmp
+        \ifdim\wd\ft@tbox>\dimexpr\linewidth-\wd\ft@hbox-1.5em\relax
+          \ft@titlebreaktrue\fi
+      \fi
+    \fi
+    \ifft@titlebreak
+      {\Large\bfseries \ft@type\ di \ft@subject}\hfill\usebox\ft@hbox
+      \par\vspace{.1em}%
+      {\raggedright\large \ft@title\par}%
+    \else
+      \parbox[b]{\dimexpr\linewidth-\wd\ft@hbox-1.5em\relax}{\raggedright
+        {\Large\bfseries \ft@type\ di \ft@subject}%
+        \ifx\ft@title\@empty\else\quad{\large \ft@title}\fi}%
+      \hfill\usebox\ft@hbox
+    \fi
+    \par\vspace{.55em}%
+    % riga 2: nome e orari
+    % la riga del nome si allunga fino agli orari
+    Nome e cognome: \leaders\hbox to 5pt{\hss.\hss}\hfill
+    \ifft@timing
+      \ft@sqsep\mbox{Inizio: \dotline{3em}$\,\rightarrow\,$Fine: \dotline{3em}%
+      \ft@sqsep Consegna: \dotline{3em}}%
+    \else
+      \kern0pt % impedisce che i puntini vengano eliminati a fine riga
+    \fi
+    % riga 3 (facoltativa): misure DSA e recupero
+    \def\ft@tmp{none}%
+    \ifx\ft@dsa\ft@tmp
+      \ifx\ft@recovery\@empty\else\par\vspace{.3em}\hfill{\footnotesize recupero del \ft@recovery}\fi
+    \else
+      \par\vspace{.3em}{\scriptsize\ft@dsainline}%
+      \ifx\ft@recovery\@empty\else\hfill{\footnotesize recupero del \ft@recovery}\fi
+    \fi
+  \end{minipage}%
+  \hfill
+  \begin{tabular}[c]{|@{\,}c@{\,}|}
+    \hline \makebox[3.6em]{\small\bfseries\ft@gradebox}\\ \hline
+    \rule{0pt}{2.6em}\\ \hline
+  \end{tabular}%
+  % filetto di chiusura
+  \par\vspace{.55em}\noindent
+  {\color{black!45}\rule{\textwidth}{.4pt}}%
+  \par\vspace{.7em}}
+
+%% =========================================================================
+%% 6. Esercizi
+%% =========================================================================
+%%  \exercise Testo...                    Esercizio n
+%%  \exercise[diff=2] Testo...            con indicatore di difficolta'
+%%  \exercise[title=Test intermedi]       titolo personalizzato
+%%  \exercise[bonus]   = \bonusexercise   esercizio bonus
+%%  L'esercizio si chiude con \exercisescore; se lo si dimentica viene chiuso
+%%  automaticamente dal successivo \exercise o da \finalscore.
+
+\newcounter{ftpart}
+\renewcommand{\theftpart}{\alph{ftpart}}
+
+% quadratini di difficolta' (1-3)
+\newcommand*{\ft@diffmarks}[1]{%
+  {\small
+   \textcolor{SubjectColor!80}{$\blacksquare$}%
+   \textcolor{SubjectColor!\ifnum#1>1 80\else 25\fi}{$\blacksquare$}%
+   \textcolor{SubjectColor!\ifnum#1>2 80\else 25\fi}{$\blacksquare$}}}
+
+\ExplSyntaxOn
+\tl_new:N \l__ft_ex_title_tl
+\tl_new:N \l__ft_ex_diff_tl
+\bool_new:N \l__ft_ex_bonus_bool
+\keys_define:nn { fancytests / exercise }
+  {
+    title .tl_set:N   = \l__ft_ex_title_tl ,
+    diff  .tl_set:N   = \l__ft_ex_diff_tl ,
+    bonus .bool_set:N = \l__ft_ex_bonus_bool ,
+    bonus .default:n  = true ,
+    fixed  .code:n    = { } ,   % usate solo da exercises
+    follow .code:n    = { } ,
+  }
+
+\NewDocumentCommand \exercise { O{} }
+  {
+    \__ft_autoclose:
+    \tl_clear:N \l__ft_ex_title_tl
+    \tl_clear:N \l__ft_ex_diff_tl
+    \bool_set_false:N \l__ft_ex_bonus_bool
+    \tl_if_blank:nF {#1}
+      {
+        \bool_set_false:N \l_tmpa_bool
+        \tl_if_in:nnT {#1} { = } { \bool_set_true:N \l_tmpa_bool }
+        \tl_if_in:nnT {#1} { , } { \bool_set_true:N \l_tmpa_bool }
+        \str_case:nnT {#1} { { bonus } { } { fixed } { } { follow } { } }
+          { \bool_set_true:N \l_tmpa_bool }
+        \bool_if:NTF \l_tmpa_bool
+          { \keys_set:nn { fancytests / exercise } {#1} }
+          { \tl_set:Nn \l__ft_ex_title_tl {#1} }        % \exercise[Titolo]
+      }
+    \bool_gset_true:N \g__ft_ex_open_bool
+    \bool_gset_eq:NN \g__ft_ex_bonus_bool \l__ft_ex_bonus_bool
+    \bool_if:NF \l__ft_ex_bonus_bool { \int_gincr:N \g__ft_ex_int }
+    \setcounter{ftpart}{0}
+    \fp_gzero:N \g__ft_ex_fp
+    \par \addvspace { 3.25ex plus 1ex minus .2ex }
+    \noindent
+    {
+      \bfseries
+      \tl_if_empty:NF \l__ft_ex_diff_tl
+        { \ft@diffmarks { \l__ft_ex_diff_tl } \hspace{.25em} }
+      \tl_if_empty:NTF \l__ft_ex_title_tl
+        {
+          \bool_if:NTF \l__ft_ex_bonus_bool
+            { Esercizio~Bonus \, * }
+            { Esercizio ~ \int_use:N \g__ft_ex_int }
+        }
+        { \l__ft_ex_title_tl }
+    }
+    \hspace{1em} \ignorespaces
+  }
+\ExplSyntaxOff
+
+\newcommand*{\bonusexercise}{\exercise[bonus]}
+\newcommand*{\bonusexercisenote}{%
+  {\footnotesize *\,L'esercizio bonus non è obbligatorio e non è necessario
+   svolgerlo per raggiungere il voto massimo.\par}}
+
+%% =========================================================================
+%% 7. Quesiti: ambiente parts
+%% =========================================================================
+%%  \begin{parts}[stretch=1.5, cols=2, start=3, ragged]
+%%    \itemx[pts=1] Testo del quesito...
+%%    \itemx[pts=0.5, diff=2, mark] ...
+%%    \itemx[pts=1, noreduced] ...   (omesso nella versione ridotta)
+%%  \end{parts}
+%%  Le lettere proseguono tra piu' ambienti parts dello stesso esercizio.
+%%
+%%  Mescolamento (facoltativo, spento di default):
+%%    \begin{parts}[shuffle]  oppure  \testsetup{shuffleparts}  per tutta la verifica
+%%    \itemx[fixed]   resta al suo posto (posto contato tra i blocchi)
+%%    \itemx[follow]  si sposta insieme al quesito precedente
+%%  Le lettere sono assegnate dopo il mescolamento; punteggi e chiave seguono.
+%%  Limiti: i quesiti non devono citarsi per lettera; niente parts annidati.
+%%  Il punteggio compare a destra della prima riga del quesito.
+
+\newlength{\ft@labelw}   \setlength{\ft@labelw}{1.2em}
+\newlength{\ft@labelsep} \setlength{\ft@labelsep}{.6em}
+\newlength{\ft@scorecol} \setlength{\ft@scorecol}{5em}
+\newlength{\ft@colgap}   \setlength{\ft@colgap}{2em}
+\newlength{\ft@cellw}
+\newsavebox{\ft@trashbox}
+
+\ExplSyntaxOn
+\fp_new:N  \l__ft_parts_stretch_fp
+\int_new:N \l__ft_parts_cols_int
+\int_new:N \l__ft_parts_start_int
+\bool_new:N \l__ft_parts_ragged_bool
+\bool_new:N \l__ft_parts_first_bool
+\bool_new:N \l__ft_skip_open_bool
+\fp_new:N  \l__ft_skip_saved_fp
+\int_new:N \l__ft_skip_counter_int
+\dim_new:N \l__ft_parts_sep_dim
+\int_new:N \l__ft_parts_cell_int
+\dim_new:N \l__ft_parts_outer_dim
+
+\keys_define:nn { fancytests / parts }
+  {
+    stretch .fp_set:N   = \l__ft_parts_stretch_fp ,
+    cols    .int_set:N  = \l__ft_parts_cols_int ,
+    start   .int_set:N  = \l__ft_parts_start_int ,
+    ragged  .bool_set:N = \l__ft_parts_ragged_bool ,
+    ragged  .default:n  = true ,
+    shuffle .bool_set:N = \l__ft_parts_shuffle_bool ,
+    shuffle .default:n  = true ,
+  }
+\tl_new:N \l__ft_shuf_out_tl
+
+% --- mescolamento generico di un corpo diviso da un comando ------------------
+%  #1 risultato, #2 comando separatore (\itemx o \exercise), #3 corpo.
+%  Ogni pezzo inizia con il separatore; le chiavi fixed/follow nelle sue
+%  opzioni lo tengono fermo o lo legano al pezzo precedente.
+\bool_new:N \l__ft_sm_fixed_bool
+\bool_new:N \l__ft_sm_follow_bool
+\keys_define:nn { fancytests / shufmeta }
+  {
+    fixed  .bool_set:N = \l__ft_sm_fixed_bool ,
+    fixed  .default:n  = true ,
+    follow .bool_set:N = \l__ft_sm_follow_bool ,
+    follow .default:n  = true ,
+  }
+\seq_new:N \l__ft_sb_raw_seq
+\seq_new:N \l__ft_sb_blocks_seq
+\seq_new:N \l__ft_sb_fixed_seq
+\seq_new:N \l__ft_sb_pool_seq
+\tl_new:N  \l__ft_sb_piece_tl
+\tl_new:N  \l__ft_sb_block_tl
+\cs_new_protected:Npn \__ft_sb_opts:w [ #1 ] #2 \q_stop
+  { \keys_set_known:nn { fancytests / shufmeta } {#1} }
+\cs_new_protected:Npn \__ft_shuffle_body:Nnn #1#2#3
+  {
+    \seq_set_split_keep_spaces:Nnn \l__ft_sb_raw_seq {#2} {#3}
+    \seq_pop_left:NN \l__ft_sb_raw_seq #1          % testo prima del primo pezzo
+    \seq_clear:N \l__ft_sb_blocks_seq
+    \seq_clear:N \l__ft_sb_fixed_seq
+    \seq_map_inline:Nn \l__ft_sb_raw_seq
+      {
+        \bool_set_false:N \l__ft_sm_fixed_bool
+        \bool_set_false:N \l__ft_sm_follow_bool
+        \tl_set:Nn \l__ft_sb_piece_tl {##1}
+        \tl_trim_spaces:N \l__ft_sb_piece_tl
+        \exp_args:NV \tl_if_head_eq_charcode:nNT \l__ft_sb_piece_tl [
+          { \exp_last_unbraced:NV \__ft_sb_opts:w \l__ft_sb_piece_tl \q_stop }
+        \bool_lazy_and:nnTF
+          { \l__ft_sm_follow_bool }
+          { ! \seq_if_empty_p:N \l__ft_sb_blocks_seq }
+          {
+            \seq_pop_right:NN \l__ft_sb_blocks_seq \l__ft_sb_block_tl
+            \tl_put_right:Nn \l__ft_sb_block_tl { #2 ##1 }
+            \seq_put_right:NV \l__ft_sb_blocks_seq \l__ft_sb_block_tl
+          }
+          {
+            \seq_put_right:Nn \l__ft_sb_blocks_seq { #2 ##1 }
+            \seq_put_right:Nx \l__ft_sb_fixed_seq { \bool_to_str:N \l__ft_sm_fixed_bool }
+          }
+      }
+    \seq_clear:N \l__ft_sb_pool_seq
+    \int_step_inline:nn { \seq_count:N \l__ft_sb_blocks_seq }
+      {
+        \str_if_eq:eeF { \seq_item:Nn \l__ft_sb_fixed_seq {##1} } { true }
+          { \seq_put_right:Nn \l__ft_sb_pool_seq {##1} }
+      }
+    \seq_shuffle:N \l__ft_sb_pool_seq
+    \int_step_inline:nn { \seq_count:N \l__ft_sb_blocks_seq }
+      {
+        \str_if_eq:eeTF { \seq_item:Nn \l__ft_sb_fixed_seq {##1} } { true }
+          { \tl_put_right:Nx #1 { \exp_not:e { \seq_item:Nn \l__ft_sb_blocks_seq {##1} } } }
+          {
+            \seq_pop_left:NN \l__ft_sb_pool_seq \l_tmpa_tl
+            \tl_put_right:Nx #1
+              { \exp_not:e { \seq_item:Nn \l__ft_sb_blocks_seq { \l_tmpa_tl } } }
+          }
+      }
+  }
+
+% --- esercizi mescolati ------------------------------------------------------
+%  \begin{exercises}  \exercise ... \exercise[fixed] ... \exercise[follow] ...
+%  \end{exercises}     (shuffle=false per disattivare)
+\bool_new:N \l__ft_exs_shuffle_bool
+\keys_define:nn { fancytests / exercises }
+  { shuffle .bool_set:N = \l__ft_exs_shuffle_bool , shuffle .default:n = true }
+\NewDocumentEnvironment { exercises } { O{} +b }
+  {
+    \bool_set_true:N \l__ft_exs_shuffle_bool
+    \keys_set:nn { fancytests / exercises } {#1}
+    \bool_if:NTF \l__ft_exs_shuffle_bool
+      {
+        \__ft_shuffle_body:Nnn \l__ft_shuf_out_tl { \exercise } {#2}
+        \tl_use:N \l__ft_shuf_out_tl
+      }
+      {#2}
+  }
+  { }
+
+\tl_new:N \l__ft_it_pts_tl
+\tl_new:N \l__ft_it_diff_tl
+\bool_new:N \l__ft_it_mark_bool
+\bool_new:N \l__ft_it_upper_bool
+\bool_new:N \l__ft_it_noreduced_bool
+\keys_define:nn { fancytests / item }
+  {
+    pts       .tl_set:N   = \l__ft_it_pts_tl ,
+    diff      .tl_set:N   = \l__ft_it_diff_tl ,
+    mark      .bool_set:N = \l__ft_it_mark_bool ,
+    mark      .default:n  = true ,
+    upper     .bool_set:N = \l__ft_it_upper_bool ,
+    upper     .default:n  = true ,
+    noreduced .bool_set:N = \l__ft_it_noreduced_bool ,
+    noreduced .default:n  = true ,
+    fixed     .code:n     = { } ,    % usate solo dal mescolamento
+    follow    .code:n     = { } ,
+  }
+
+% impostazioni della lista interna
+\cs_new_protected:Npn \__ft_list_begin:
+  {
+    \list { }
+      {
+        \setlength \leftmargin { \dim_eval:n { \itmindent + \ft@labelw + \ft@labelsep } }
+        \setlength \labelwidth { \ft@labelw }
+        \setlength \labelsep   { \ft@labelsep }
+        \setlength \rightmargin { \ft@scorecol }
+        \setlength \itemsep { \l__ft_parts_sep_dim }
+        \setlength \parsep { 0pt }
+        \setlength \topsep { \dim_eval:n { \l__ft_parts_sep_dim / 2 + 2pt } }
+        \setlength \partopsep { 0pt }
+        \setlength \listparindent { 0pt }
+        \setlength \itemindent { 0pt }
+        \cs_set:Npn \makelabel ##1 { ##1 \hfil }
+      }
+    \bool_if:NT \l__ft_parts_ragged_bool { \raggedright }
+  }
+
+% riquadro del punteggio nel margine destro, alla prima riga del quesito
+\cs_new_protected:Npn \__ft_put_score:n #1
+  {
+    \dim_set:Nn \l_tmpa_dim { \linewidth + \rightmargin }
+    \hbox_set:Nn \l_tmpa_box { \__ft_box:nn { } {#1} }
+    \dim_sub:Nn \l_tmpa_dim { \box_wd:N \l_tmpa_box }
+    \leavevmode
+    \hbox_overlap_right:n { \tex_kern:D \l_tmpa_dim \box_use:N \l_tmpa_box }
+    \ignorespaces
+  }
+
+\cs_new_protected:Npn \__ft_close_skip:
+  {
+    \bool_if:NT \l__ft_skip_open_bool
+      {
+        \par \egroup    % chiude la \vbox di scarto
+        \fp_gset_eq:NN \g__ft_ex_fp \l__ft_skip_saved_fp
+        \setcounter{ftpart}{ \l__ft_skip_counter_int }
+        \bool_set_false:N \l__ft_skip_open_bool
+      }
+  }
+
+\cs_new_protected:Npn \__ft_close_cell:
+  {
+    \int_compare:nNnT \l__ft_parts_cols_int > 1
+      {
+        \bool_if:NF \l__ft_parts_first_bool
+          {
+            \endlist \end{minipage} \hss \egroup
+            \int_compare:nNnTF { \int_mod:nn { \l__ft_parts_cell_int } { \l__ft_parts_cols_int } } = 0
+              { \par \noindent }
+              { \nobreak \hspace { \ft@colgap } }
+          }
+      }
+  }
+
+\cs_new_protected:Npn \__ft_itemx:n #1
+  {
+    \__ft_close_skip:      % prima di leggere le chiavi: \egroup ripristina i valori locali
+    \tl_clear:N \l__ft_it_pts_tl
+    \tl_clear:N \l__ft_it_diff_tl
+    \bool_set_false:N \l__ft_it_mark_bool
+    \bool_set_false:N \l__ft_it_upper_bool
+    \bool_set_false:N \l__ft_it_noreduced_bool
+    \keys_set:nn { fancytests / item } {#1}
+    \bool_if:nTF { \l__ft_it_noreduced_bool && \legacy_if_p:n { ft@reduced } }
+      {
+        % quesito omesso nella versione ridotta: composto e scartato
+        \fp_gset_eq:NN \l__ft_skip_saved_fp \g__ft_ex_fp
+        \int_set:Nn \l__ft_skip_counter_int { \value{ftpart} }
+        \bool_set_true:N \l__ft_skip_open_bool
+        \setbox \ft@trashbox \vbox \bgroup \hsize = \linewidth
+      }
+      {
+        \__ft_close_cell:
+        \int_compare:nNnT \l__ft_parts_cols_int > 1
+          {
+            \int_incr:N \l__ft_parts_cell_int
+            \hbox to \ft@cellw \bgroup
+            \begin{minipage}[t]{\ft@cellw}
+            \__ft_list_begin:
+          }
+        \bool_set_false:N \l__ft_parts_first_bool
+        \stepcounter{ftpart}
+        \item [ \__ft_label: ]
+        \tl_if_empty:NF \l__ft_it_pts_tl
+          {
+            \fp_gadd:Nn \g__ft_ex_fp { \l__ft_it_pts_tl }
+            \__ft_put_score:n { \l__ft_it_pts_tl }
+          }
+      }
+  }
+
+\cs_new_protected:Npn \__ft_label:
+  {
+    \tl_if_empty:NF \l__ft_it_diff_tl
+      { \llap { \ft@diffmarks { \l__ft_it_diff_tl } \hspace{.3em} } }
+    \bool_if:NTF \l__ft_it_mark_bool
+      { \hlc [ SubjectColor ! 20 ] { \bfseries \__ft_letter: . } }
+      { \textbf { \__ft_letter: . } }
+  }
+\cs_new:Npn \__ft_letter:
+  { \bool_if:NTF \l__ft_it_upper_bool { \Alph{ftpart} } { \alph{ftpart} } }
+
+\NewDocumentEnvironment { parts } { O{} +b }
+  {
+    \bool_set_eq:NN \l__ft_parts_shuffle_bool \g__ft_shuffleparts_bool
+    \fp_set:Nn \l__ft_parts_stretch_fp { 1.5 }
+    \int_set:Nn \l__ft_parts_cols_int { 1 }
+    \int_zero:N \l__ft_parts_start_int
+    \bool_set_false:N \l__ft_parts_ragged_bool
+    \bool_set_false:N \l__ft_skip_open_bool
+    \bool_set_true:N \l__ft_parts_first_bool
+    \int_zero:N \l__ft_parts_cell_int
+    \dim_set_eq:NN \l__ft_parts_outer_dim \linewidth
+    \keys_set:nn { fancytests / parts } {#1}
+    \int_compare:nNnT \l__ft_parts_start_int > 0
+      { \setcounter{ftpart}{ \int_eval:n { \l__ft_parts_start_int - 1 } } }
+    \dim_set:Nn \l__ft_parts_sep_dim
+      { \fp_to_dim:n { ( \l__ft_parts_stretch_fp - 1 ) * \baselineskip } }
+    \bool_gset_true:N \g__ft_inparts_bool
+    \cs_set_eq:NN \itemx \__ft_itemx_cmd
+    \int_compare:nNnTF \l__ft_parts_cols_int > 1
+      {
+        \setlength \ft@cellw
+          { \dim_eval:n { ( \linewidth - \ft@colgap * ( \l__ft_parts_cols_int - 1 ) )
+                          / \l__ft_parts_cols_int - 1pt } }
+        \par \addvspace { \dim_eval:n { \l__ft_parts_sep_dim / 2 + 2pt } }
+        \lineskip = \dim_eval:n { \l__ft_parts_sep_dim + 2pt } \relax
+        \lineskiplimit = 0pt \relax
+        \noindent
+      }
+      { \__ft_list_begin: }
+    \bool_if:NTF \l__ft_parts_shuffle_bool
+      {
+        \__ft_shuffle_body:Nnn \l__ft_shuf_out_tl { \itemx } {#2}
+        \tl_use:N \l__ft_shuf_out_tl
+      }
+      { \ignorespaces #2 }
+  }
+  {
+    \__ft_close_skip:
+    \int_compare:nNnTF \l__ft_parts_cols_int > 1
+      {
+        \bool_if:NF \l__ft_parts_first_bool { \endlist \end{minipage} \hss \egroup }
+        \par \addvspace { \dim_eval:n { \l__ft_parts_sep_dim / 2 + 2pt } }
+      }
+      { \endlist }
+    % la scatola che contiene l'elenco occupa tutta la larghezza
+    % (serve dentro le minipage, dove i punteggi stanno nel margine destro)
+    \par \nointerlineskip \hbox_to_wd:nn { \l__ft_parts_outer_dim } { }
+    \bool_gset_false:N \g__ft_inparts_bool
+  }
+\NewDocumentCommand \__ft_itemx_cmd { O{} } { \__ft_itemx:n {#1} }
+\ExplSyntaxOff
+
+%% =========================================================================
+%% 8. Risposta multipla: ambiente choices
+%% =========================================================================
+%%  \begin{choices}[cols=auto]      auto | 1 | 2 | 3 | 4
+%%    \correct  risposta giusta
+%%    \choice   distrattore
+%%    \choice[fixed] Nessuna delle precedenti     (resta in ultima posizione)
+%%    \correct[if={v=2}] giusta solo se \pick[v]{..} ha scelto la 2a variante
+%%  \end{choices}
+%%  Chiavi: cols, shuffle=true|false, indent=<dim>, labels=box|letters,
+%%          before=<dim> (spazio sopra, 2pt), rowsep=<dim> (spazio extra tra
+%%          le righe, 0pt), after=<dim> (spazio sotto, .25em).
+%%  Le opzioni vengono mescolate (seme fisso: copie riproducibili) e la
+%%  chiave di correzione e' scritta in <nomefile>.key.csv.
+%%  Con l'opzione `answers` la risposta corretta e' evidenziata.
+
+\ExplSyntaxOn
+\tl_new:N  \l__ft_ch_cols_tl
+\bool_new:N \l__ft_ch_shuffle_bool
+\dim_new:N \l__ft_ch_indent_dim
+\tl_new:N  \l__ft_ch_labels_tl
+\dim_new:N \l__ft_ch_after_dim
+\dim_new:N \l__ft_ch_before_dim
+\dim_new:N \l__ft_ch_rowsep_dim
+\keys_define:nn { fancytests / choices }
+  {
+    cols    .tl_set:N   = \l__ft_ch_cols_tl ,
+    shuffle .bool_set:N = \l__ft_ch_shuffle_bool ,
+    indent  .dim_set:N  = \l__ft_ch_indent_dim ,
+    labels  .tl_set:N   = \l__ft_ch_labels_tl ,
+    after   .dim_set:N  = \l__ft_ch_after_dim ,
+    before  .dim_set:N  = \l__ft_ch_before_dim ,
+    rowsep  .dim_set:N  = \l__ft_ch_rowsep_dim ,
+    ragged  .code:n     = { } ,
+  }
+\keys_define:nn { fancytests / choice }
+  {
+    fixed .bool_set:N = \l__ft_c_fixed_bool ,
+    fixed .default:n  = true ,
+    if    .tl_set:N   = \l__ft_c_if_tl ,
+  }
+
+\seq_new:N \l__ft_ch_raw_seq
+\seq_new:N \l__ft_ch_text_seq
+\seq_new:N \l__ft_ch_fixed_seq
+\seq_new:N \l__ft_ch_correct_seq
+\seq_new:N \l__ft_ch_pool_seq
+\seq_new:N \l__ft_ch_order_seq
+\tl_new:N  \l__ft_ch_body_tl
+\tl_new:N  \l__ft_ch_item_tl
+\tl_new:N  \l__ft_ch_key_tl
+\int_new:N \l__ft_ch_n_int
+\int_new:N \l__ft_ch_cols_int
+\int_new:N \l__ft_ch_k_int
+\dim_new:N \l__ft_ch_max_dim
+\dim_new:N \l__ft_ch_w_dim
+\dim_new:N \l__ft_ch_mark_dim
+\dim_new:N \l__ft_ch_gap_dim
+\bool_new:N \l__ft_ch_iscorrect_bool
+\box_new:N \l__ft_ch_tmp_box
+
+\cs_new:Npn \__ft_correct_mark: { }
+
+% chiave di correzione:  versione;esercizio;quesito;risposta
+\iow_new:N \g__ft_key_iow
+\bool_new:N \g__ft_key_open_bool
+\cs_new_protected:Npn \__ft_key_write:n #1
+  {
+    \bool_if:NF \g__ft_key_open_bool
+      {
+        \iow_open:Nn \g__ft_key_iow { \c_sys_jobname_str .key.csv }
+        \iow_now:Nn \g__ft_key_iow { versione;esercizio;quesito;risposta }
+        \bool_gset_true:N \g__ft_key_open_bool
+      }
+    \iow_now:Nx \g__ft_key_iow
+      {
+        \int_use:N \g__ft_version_int ;
+        \bool_if:NTF \g__ft_ex_bonus_bool { B } { \int_use:N \g__ft_ex_int } ;
+        \bool_if:NT \g__ft_inparts_bool { \alph{ftpart} } ;
+        #1
+      }
+  }
+
+% "[opzioni] testo" -> opzioni, testo
+\cs_new_protected:Npn \__ft_parse_opt:w [ #1 ] #2 \q_stop
+  {
+    \keys_set:nn { fancytests / choice } {#1}
+    \tl_set:Nn \l__ft_ch_item_tl {#2}
+  }
+
+% valuta  if={nome=valore}
+\cs_new_protected:Npn \__ft_eval_if:w #1 = #2 \q_stop
+  {
+    \int_if_exist:cTF { g__ft_pick_ \tl_trim_spaces:n {#1} _int }
+      {
+        \int_compare:nNnTF { \int_use:c { g__ft_pick_ \tl_trim_spaces:n {#1} _int } } = {#2}
+          { \bool_set_true:N \l__ft_ch_iscorrect_bool }
+          { \bool_set_false:N \l__ft_ch_iscorrect_bool }
+      }
+      { \msg_error:nnn { fancytests } { unknown-pick } {#1} }
+  }
+\msg_new:nnn { fancytests } { unknown-pick } { \pick[#1]{...}~non~definito. }
+
+\cs_new_protected:Npn \__ft_marker:nn #1#2  % #1 indice (1..n), #2 corretta?
+  {
+    \str_if_eq:VnTF \l__ft_ch_labels_tl { letters }
+      {
+        \bool_lazy_and:nnTF { #2 } { \legacy_if_p:n { ft@answers } }
+          { \textcolor{SubjectColor}{ \textbf { \int_to_Alph:n {#1} ) } } }
+          { \textbf { \int_to_Alph:n {#1} ) } }
+      }
+      {
+        \bool_lazy_and:nnTF { #2 } { \legacy_if_p:n { ft@answers } }
+          { \textcolor{SubjectColor}{$\blacksquare$} }
+          { $\square$ }
+      }
+  }
+
+\cs_new_protected:Npn \__ft_choices:nn #1#2
+  {
+    \group_begin:
+    \tl_set:Nn \l__ft_ch_cols_tl { auto }
+    \bool_set_eq:NN \l__ft_ch_shuffle_bool \g__ft_shuffle_bool
+    \bool_if:NTF \g__ft_inparts_bool
+      { \dim_set:Nn \l__ft_ch_indent_dim { 0pt } }
+      { \dim_set:Nn \l__ft_ch_indent_dim { \itmindent } }
+    \tl_set_eq:NN \l__ft_ch_labels_tl \ft@labels
+    \dim_set:Nn \l__ft_ch_after_dim { .25em }
+    \dim_set:Nn \l__ft_ch_before_dim { 2pt }
+    \dim_zero:N \l__ft_ch_rowsep_dim
+    \keys_set:nn { fancytests / choices } {#1}
+    % --- 1. separa le opzioni ------------------------------------------------
+    \tl_set:Nn \l__ft_ch_body_tl {#2}
+    \tl_replace_all:Nnn \l__ft_ch_body_tl { \correct } { \choice \__ft_correct_mark: }
+    \exp_args:NNnV \seq_set_split_keep_spaces:Nnn \l__ft_ch_raw_seq { \choice } \l__ft_ch_body_tl
+    \seq_pop_left:NN \l__ft_ch_raw_seq \l_tmpa_tl          % testo prima di \choice
+    \seq_clear:N \l__ft_ch_text_seq
+    \seq_clear:N \l__ft_ch_fixed_seq
+    \seq_clear:N \l__ft_ch_correct_seq
+    \seq_map_inline:Nn \l__ft_ch_raw_seq
+      {
+        \tl_set:Nn \l__ft_ch_item_tl {##1}
+        \bool_set_false:N \l__ft_ch_iscorrect_bool
+        \bool_set_false:N \l__ft_c_fixed_bool
+        \tl_clear:N \l__ft_c_if_tl
+        \exp_args:NV \tl_if_head_eq_meaning:nNT \l__ft_ch_item_tl \__ft_correct_mark:
+          {
+            \bool_set_true:N \l__ft_ch_iscorrect_bool
+            \tl_set:Nx \l__ft_ch_item_tl { \tl_tail:N \l__ft_ch_item_tl }
+          }
+        \tl_trim_spaces:N \l__ft_ch_item_tl
+        \exp_args:NV \tl_if_head_eq_charcode:nNT \l__ft_ch_item_tl [
+          {
+            \exp_last_unbraced:NV \__ft_parse_opt:w \l__ft_ch_item_tl \q_stop
+            \tl_trim_spaces:N \l__ft_ch_item_tl
+          }
+        \tl_if_empty:NF \l__ft_c_if_tl
+          { \exp_last_unbraced:NV \__ft_eval_if:w \l__ft_c_if_tl \q_stop }
+        \seq_put_right:NV \l__ft_ch_text_seq \l__ft_ch_item_tl
+        \seq_put_right:Nx \l__ft_ch_fixed_seq { \bool_to_str:N \l__ft_c_fixed_bool }
+        \seq_put_right:Nx \l__ft_ch_correct_seq { \bool_to_str:N \l__ft_ch_iscorrect_bool }
+      }
+    \int_set:Nn \l__ft_ch_n_int { \seq_count:N \l__ft_ch_text_seq }
+    % --- 2. ordine: mescola le opzioni non fisse ------------------------------
+    \seq_clear:N \l__ft_ch_pool_seq
+    \int_step_inline:nn { \l__ft_ch_n_int }
+      {
+        \str_if_eq:eeF { \seq_item:Nn \l__ft_ch_fixed_seq {##1} } { true }
+          { \seq_put_right:Nn \l__ft_ch_pool_seq {##1} }
+      }
+    \bool_if:NT \l__ft_ch_shuffle_bool { \seq_shuffle:N \l__ft_ch_pool_seq }
+    \seq_clear:N \l__ft_ch_order_seq
+    \int_step_inline:nn { \l__ft_ch_n_int }
+      {
+        \str_if_eq:eeTF { \seq_item:Nn \l__ft_ch_fixed_seq {##1} } { true }
+          { \seq_put_right:Nn \l__ft_ch_order_seq {##1} }
+          {
+            \seq_pop_left:NN \l__ft_ch_pool_seq \l_tmpa_tl
+            \seq_put_right:NV \l__ft_ch_order_seq \l_tmpa_tl
+          }
+      }
+    % --- 3. chiave di correzione ---------------------------------------------
+    \tl_clear:N \l__ft_ch_key_tl
+    \int_zero:N \l__ft_ch_k_int
+    \seq_map_inline:Nn \l__ft_ch_order_seq
+      {
+        \int_incr:N \l__ft_ch_k_int
+        \str_if_eq:eeT { \seq_item:Nn \l__ft_ch_correct_seq {##1} } { true }
+          { \tl_put_right:Nx \l__ft_ch_key_tl { \int_to_Alph:n { \l__ft_ch_k_int } } }
+      }
+    \tl_if_empty:NF \l__ft_ch_key_tl { \__ft_key_write:n { \l__ft_ch_key_tl } }
+    % --- 4. misure e numero di colonne ---------------------------------------
+    \hbox_set:Nn \l__ft_ch_tmp_box { \__ft_marker:nn { 1 } { \c_false_bool } \hspace{.75em} }
+    \dim_set:Nn \l__ft_ch_mark_dim { \box_wd:N \l__ft_ch_tmp_box }
+    \dim_set:Nn \l__ft_ch_gap_dim { 1em }
+    \dim_zero:N \l__ft_ch_max_dim
+    \int_zero:N \l__ft_ch_k_int
+    \seq_map_inline:Nn \l__ft_ch_order_seq
+      {
+        \int_incr:N \l__ft_ch_k_int
+        \box_if_exist:cF { l__ft_ch_ \int_use:N \l__ft_ch_k_int _box }
+          { \box_new:c { l__ft_ch_ \int_use:N \l__ft_ch_k_int _box } }
+        \hbox_set:cn { l__ft_ch_ \int_use:N \l__ft_ch_k_int _box }
+          { \seq_item:Nn \l__ft_ch_text_seq {##1} }
+        \dim_set:Nn \l__ft_ch_max_dim
+          { \dim_max:nn { \l__ft_ch_max_dim }
+                        { \box_wd:c { l__ft_ch_ \int_use:N \l__ft_ch_k_int _box } } }
+      }
+    \str_if_eq:VnTF \l__ft_ch_cols_tl { auto }
+      {
+        % tutte su una riga, altrimenti due colonne, altrimenti una
+        \int_set:Nn \l__ft_ch_cols_int { 1 }
+        \clist_map_inline:nn { \int_min:nn { \l__ft_ch_n_int } { 5 } , 2 }
+          {
+            \bool_lazy_and:nnT
+              { \int_compare_p:nNn { \l__ft_ch_cols_int } = 1 }
+              { \int_compare_p:nNn {##1} > 1 }
+              {
+                \dim_compare:nNnT
+                  { \l__ft_ch_max_dim + \l__ft_ch_mark_dim }
+                  <
+                  { ( \linewidth - \l__ft_ch_indent_dim - \l__ft_ch_gap_dim * ( ##1 - 1 ) ) / ##1 }
+                  { \int_set:Nn \l__ft_ch_cols_int {##1} }
+              }
+          }
+      }
+      { \int_set:Nn \l__ft_ch_cols_int { \l__ft_ch_cols_tl } }
+    \dim_set:Nn \l__ft_ch_w_dim
+      { ( \linewidth - \l__ft_ch_indent_dim - \l__ft_ch_gap_dim * ( \l__ft_ch_cols_int - 1 ) )
+        / \l__ft_ch_cols_int - 1pt }
+    % --- 5. composizione -----------------------------------------------------
+    \par \nobreak \bool_if:NF \l__ft_ch_openend_bool { \vspace { \l__ft_ch_before_dim } }
+    \everypar { }          % niente strut automatico dentro le celle p{} di tabelle
+    \parskip = 0pt \relax
+    \lineskip = 3pt \relax
+    \int_zero:N \l__ft_ch_k_int
+    \seq_map_inline:Nn \l__ft_ch_order_seq
+      {
+        \int_incr:N \l__ft_ch_k_int
+        \int_compare:nNnT { \int_mod:nn { \l__ft_ch_k_int - 1 } { \l__ft_ch_cols_int } } = 0
+          {
+            \int_compare:nNnF \l__ft_ch_k_int = 1 { \par \vspace { \l__ft_ch_rowsep_dim } }
+            \noindent \hspace* { \l__ft_ch_indent_dim }
+          }
+        \int_compare:nNnF { \int_mod:nn { \l__ft_ch_k_int - 1 } { \l__ft_ch_cols_int } } = 0
+          { \nobreak \hspace { \l__ft_ch_gap_dim } }
+        \bool_set:Nn \l__ft_ch_iscorrect_bool
+          { \str_if_eq_p:ee { \seq_item:Nn \l__ft_ch_correct_seq {##1} } { true } }
+        \dim_compare:nNnTF
+          { \box_wd:c { l__ft_ch_ \int_use:N \l__ft_ch_k_int _box } + \l__ft_ch_mark_dim }
+          > { \l__ft_ch_w_dim }
+          {
+            % opzione lunga: va a capo con rientro sospeso
+            \parbox [t] { \l__ft_ch_w_dim }
+              {
+                \hangindent = \l__ft_ch_mark_dim \hangafter = 1 \relax
+                \makebox [ \l__ft_ch_mark_dim ] [l]
+                  { \__ft_marker:nn { \l__ft_ch_k_int } { \l__ft_ch_iscorrect_bool } }
+                \seq_item:Nn \l__ft_ch_text_seq {##1}
+              }
+          }
+          {
+            \makebox [ \l__ft_ch_w_dim ] [l]
+              {
+                \makebox [ \l__ft_ch_mark_dim ] [l]
+                  { \__ft_marker:nn { \l__ft_ch_k_int } { \l__ft_ch_iscorrect_bool } }
+                \box_use:c { l__ft_ch_ \int_use:N \l__ft_ch_k_int _box }
+              }
+          }
+      }
+    \bool_if:NTF \l__ft_ch_openend_bool
+      { \vspace { \l__ft_ch_after_dim } }    % resta in modo orizzontale (celle di tabella)
+      { \par \vspace { \l__ft_ch_after_dim } }
+    \group_end:
+  }
+\bool_new:N \l__ft_ch_openend_bool
+\cs_generate_variant:Nn \__ft_choices:nn { nV }
+
+\NewDocumentEnvironment { choices } { O{} +b } { \__ft_choices:nn {#1} {#2} } { }
+\cs_new_protected:Npn \choice  { \msg_error:nn { fancytests } { outside } }
+\cs_new_protected:Npn \correct { \msg_error:nn { fancytests } { outside } }
+\msg_new:nnn { fancytests } { outside } { \choice~e~\correct~vanno~dentro~choices. }
+\ExplSyntaxOff
+
+%% =========================================================================
+%% 9. Casualita'
+%% =========================================================================
+%%  \pick{a \or b \or c}          una variante a caso
+%%  \pick[v]{a \or b}             ... ricordata col nome v (per \correct[if={v=2}])
+%%  \randint[n]{1}{9}             intero casuale, ricordato col nome n
+%%  \useval{n}                    ristampa il valore di n
+%%  \begin{shuffle}[g] \block{..} \block{..} \end{shuffle}
+%%  \shuffled{g}{1}               primo blocco dopo il mescolamento
+%%  \begin{exercises} \exercise ... \exercise[fixed] ... \exercise[follow] ...
+%%  \end{exercises}               mescola gli esercizi (numerati dopo)
+%%
+%%  Il seme e' fisso: ricompilando si ottengono le stesse copie.
+%%    \usepackage[seed=42]{fancytests}   seme dell'intero documento (1 di default)
+%%    \testsetup{seed=42}                idem, oppure da quel punto in poi
+%%    \setseed{42}                       riparte da 42 da qui in avanti
+%%    seed=0                             seme diverso a ogni compilazione
+
+\ExplSyntaxOn
+\seq_new:N \l__ft_pick_seq
+\NewDocumentCommand \pick { O{last} m }
+  {
+    \seq_set_split:Nnn \l__ft_pick_seq { \or } {#2}
+    \int_if_exist:cF { g__ft_pick_ #1 _int } { \int_new:c { g__ft_pick_ #1 _int } }
+    \int_gset:cn { g__ft_pick_ #1 _int } { \int_rand:n { \seq_count:N \l__ft_pick_seq } }
+    \seq_item:Nn \l__ft_pick_seq { \int_use:c { g__ft_pick_ #1 _int } }
+  }
+\NewDocumentCommand \randint { O{last} m m }
+  {
+    \int_if_exist:cF { g__ft_val_ #1 _int } { \int_new:c { g__ft_val_ #1 _int } }
+    \int_gset:cn { g__ft_val_ #1 _int } { \int_rand:nn {#2} {#3} }
+    \int_use:c { g__ft_val_ #1 _int }
+  }
+\NewDocumentCommand \useval { m } { \int_use:c { g__ft_val_ #1 _int } }
+
+\seq_new:N \l__ft_shuffle_seq
+\NewDocumentEnvironment { shuffle } { O{last} +b }
+  {
+    \seq_clear:N \l__ft_shuffle_seq
+    \group_begin:
+      \cs_set:Npn \block ##1 { \seq_put_right:Nn \l__ft_shuffle_seq {##1} }
+      #2
+      \seq_shuffle:N \l__ft_shuffle_seq
+      \seq_if_exist:cF { g__ft_shuffle_ #1 _seq } { \seq_new:c { g__ft_shuffle_ #1 _seq } }
+      \seq_gset_eq:cN { g__ft_shuffle_ #1 _seq } \l__ft_shuffle_seq
+    \group_end:
+  }
+  { }
+\NewExpandableDocumentCommand \shuffled { m m } { \seq_item:cn { g__ft_shuffle_ #1 _seq } {#2} }
+
+% \setseed{n}: riparte da un seme preciso (da qui in avanti)
+\NewDocumentCommand \setseed { m }
+  { \sys_gset_rand_seed:n {#1} \pgfmathsetseed {#1} }
+% seme casuale: uguale per l3 e pgf
+\AddToHook { begindocument }
+  {
+    \int_compare:nNnF { \ft@seed } = 0
+      {
+        \sys_gset_rand_seed:n { \ft@seed }
+        \pgfmathsetseed { \ft@seed }
+      }
+  }
+\ExplSyntaxOff
+
+%% =========================================================================
+%% 10. Grafici, fisica, matematica, soluzioni
+%% =========================================================================
+
+% --- 10.1 Grafici di funzione (pgfplots) -------------------------------------
+%  \begin{ftplot}[xmin=-5, xmax=5, ymin=-5, ymax=5, width=8cm, height=8cm]
+%    \fplot{e^x - 1}[A]
+%    \fplot[domain=1.001:5, dashed]{-ln(x-1)}[B]
+%  \end{ftplot}
+%  Stile `ft` = assi centrati, griglia principale e secondaria, curve nere
+%  spesse; le curve successive cambiano stile (continua, tratteggiata, grigia,
+%  punteggiata) e restano distinguibili in fotocopia.
+\ifft@plots
+\pgfplotsset{
+  ft/.style={
+    axis lines=middle, xlabel={$x$},
+    grid=both, grid style={gray}, minor tick num=3, minor grid style={gray!30},
+    legend pos=north west, legend cell align=left,
+    restrict y to domain=-50:50,
+    width=8cm, height=8cm,
+    cycle list={
+      {black, very thick},
+      {black, very thick, dashed},
+      {gray!80, very thick},
+      {black, very thick, dotted}},
+    every axis plot/.append style={samples=80, mark=none},
+  },
+}
+\NewDocumentEnvironment{ftplot}{O{}}
+  {\begin{tikzpicture}\begin{axis}[ft,#1]}
+  {\end{axis}\end{tikzpicture}}
+\NewDocumentCommand{\fplot}{O{} m o}{%
+  \addplot+[#1]{#2};%
+  \IfValueT{#3}{\addlegendentry{#3}}}
+\fi
+
+% --- 10.2 Diagrammi di fisica (TikZ) -----------------------------------------
+\tikzset{
+  force/.style     ={-{Stealth[length=2.5mm]}, very thick, FriendlyRed},
+  velocity/.style  ={-{Stealth[length=2.5mm]}, very thick, FriendlyDenim},
+  vector/.style    ={-{Stealth[length=2mm]}, thick},
+  axis arrow/.style={-{Stealth[length=1.6mm]}},
+  dimension/.style ={{Stealth[length=1.5mm]}-{Stealth[length=1.5mm]}, thin},
+  body/.style      ={draw, thick, fill=black!6},
+  ground/.style    ={fill=black!12, draw=none},
+  spring/.style    ={decorate, decoration={coil, aspect=.4, segment length=1.6mm,
+                     amplitude=1.6mm, pre length=2mm, post length=2mm}},
+  % curve che "continuano" oltre il tratto disegnato (puntini alle estremita')
+  continuation/.style={densely dotted},
+  continue/.style={postaction=decorate, decoration={markings,
+    mark=at position 0 with {\draw[continuation] (0pt,0pt) -- (-#1,0pt);},
+    mark=at position 1 with {\draw[continuation] (0pt,0pt) -- (#1,0pt);}}},
+  continue/.default=.75em,
+  startcontinue/.style={postaction=decorate, decoration={markings,
+    mark=at position 0 with {\draw[continuation] (0pt,0pt) -- (-#1,0pt);}}},
+  startcontinue/.default=.75em,
+  endcontinue/.style={postaction=decorate, decoration={markings,
+    mark=at position 1 with {\draw[continuation] (0pt,0pt) -- (#1,0pt);}}},
+  endcontinue/.default=.75em,
+}
+
+% --- 10.3 Matematica ---------------------------------------------------------
+\newcommand*{\spN}{\mathbb{N}}
+\newcommand*{\spZ}{\mathbb{Z}}
+\newcommand*{\spQ}{\mathbb{Q}}
+\newcommand*{\spR}[1][]{\mathbb{R}\if\relax\detokenize{#1}\relax\else^{#1}\fi}
+\newcommand*{\spC}[1][]{\mathbb{C}\if\relax\detokenize{#1}\relax\else^{#1}\fi}
+\DeclareMathOperator{\Dom}{dom}
+\DeclareMathOperator{\Ima}{im}
+\DeclareMathOperator{\Sign}{sgn}
+\DeclareMathOperator{\sen}{sen}
+\DeclareMathOperator{\tg}{tg}
+\DeclareMathOperator{\arcsen}{arcsen}
+\DeclareMathOperator{\arctg}{arctg}
+\newcommand*{\abs}[1]{\left\vert #1 \right\vert}
+\newcommand*{\norm}[1]{\left\Vert #1 \right\Vert}
+\newcommand*{\eqdef}{\stackrel{\mathclap{\normalfont\scriptsize\mbox{def}}}{=}}
+\newcommand*{\eqq}{\stackrel{\mathclap{\normalfont\scriptsize\mbox{?}}}{=}}
+\newcommand*{\lesq}{\leqslant}
+\newcommand*{\gesq}{\geqslant}
+\newcommand*{\vb}[1]{\vec{\bm{#1}}}
+\newcommand*{\vect}[1]{\overrightarrow{#1}}
+\newcommand*{\compacteq}{\setlength{\abovedisplayskip}{3pt}\setlength{\belowdisplayskip}{3pt}}
+\newcommand*{\quitecompacteq}{\setlength{\abovedisplayskip}{6pt}\setlength{\belowdisplayskip}{6pt}}
+\newcommand*{\notsocompacteq}{\setlength{\abovedisplayskip}{9pt}\setlength{\belowdisplayskip}{9pt}}
+% unita' rapide (alternativa leggera a \qty di siunitx)
+\newcommand*{\unm}[1]{\,\mathrm{#1}}
+\newcommand*{\sunm}[3][]{\,\mathrm{#2}/\mathrm{#3}\if\relax\detokenize{#1}\relax\else^{#1}\fi}
+
+% --- 10.4 Soluzioni (solo con l'opzione answers) -----------------------------
+\NewDocumentEnvironment{solution}{O{Soluzione} +b}
+  {\ifft@answers
+     \par\smallskip\noindent
+     \colorbox{SubjectColor!7}{\parbox{\dimexpr\linewidth-2\fboxsep}{%
+       {\small\bfseries\color{SubjectColor}#1}\par\smallskip #2}}\par\smallskip
+   \fi}{}
+
+% --- 10.5 Velocita': bozza senza figure / cache --------------------------------
+\ifft@nofig
+  \AddToHook{begindocument}{%
+    \RenewDocumentEnvironment{tikzpicture}{O{} +b}
+      {\fbox{\parbox[c][1.5cm][c]{2.5cm}{\centering\scriptsize\ttfamily TikZ}}}{}%
+    \ifft@plots
+      \RenewDocumentEnvironment{ftplot}{O{} +b}
+        {\fbox{\parbox[c][3cm][c]{4cm}{\centering\scriptsize\ttfamily grafico}}}{}%
+    \fi}
+\fi
+\ifft@cache
+  % la memoizzazione tiene conto della copia: figure mescolate restano corrette
+  \mmzset{context={\the\value{ftpart}-\csname ft@version\endcsname}}
+  \ifft@plots\mmzset{auto={ftplot}{memoize}}\fi
+\fi
+
+%% =========================================================================
+%% 11. Livello di compatibilita' (solo con l'opzione legacy)
+%% =========================================================================
+\ifft@legacy\else\expandafter\endinput\fi
+%% Tutto cio' che segue viene letto solo con \usepackage[legacy]{fancytests}.
+%% Permette di compilare le verifiche scritte con fancylessons senza
+%% modificarle. Per i testi nuovi usare la sintassi delle sezioni 4-10.
+
+\ExplSyntaxOn
+\bool_gset_false:N \g__ft_autoclose_bool   % come in fancylessons
+
+% --- 11.1 Intestazioni --------------------------------------------------------
+\cs_new_protected:Npn \__ft_legacy_header:nnnnnnnn #1#2#3#4#5#6#7#8
+  { % recupero, tipo, materia, classe, data, titolo, orari(true/false), dsa
+    \testheader [ recovery = {#1}, type = {#2}, subject = {#3}, class = {#4},
+                  date = {#5}, title = {#6}, timing = #7, dsa = {#8} ]
+  }
+\NewDocumentCommand \mathtestheader { O{} m m m D(){dsa} }
+  { \__ft_legacy_header:nnnnnnnn {#1} {Verifica} {math} {#2} {#3} {#4} {true} {#5} }
+\NewDocumentCommand \intermediatemathtestheader { O{} m m m D(){dsa} }
+  { \__ft_legacy_header:nnnnnnnn {#1} {Test} {math} {#2} {#3} {#4} {true} {#5} }
+\NewDocumentCommand \phystestheader { O{} m m m D(){dsa} }
+  { \__ft_legacy_header:nnnnnnnn {#1} {Verifica} {physics} {#2} {#3} {#4} {true} {#5} }
+\NewDocumentCommand \intermediatephystestheader { O{} m m m D(){dsa} }
+  { \__ft_legacy_header:nnnnnnnn {#1} {Test} {physics} {#2} {#3} {#4} {true} {#5} }
+\NewDocumentCommand \physinttestheader { O{} m m m D(){dsa} }
+  { \__ft_legacy_header:nnnnnnnn {#1} {Interrogazione} {physics} {#2} {#3} {#4} {false} {#5} }
+\NewDocumentCommand \advancedtestheader { O{} m m m m m m m m }
+  {
+    \__ft_legacy_header:nnnnnnnn {#1} {#2} {#3} {#5} {#6} {#7}
+      { \str_if_eq:nnTF {#8} { simplified } { false } { true } } {#9}
+  }
+
+% --- 11.2 Punteggi ------------------------------------------------------------
+\NewDocumentCommand \minimalfinalscore { O{Tot:} }
+  {
+    \__ft_autoclose:
+    \hfill \textbf{#1} ~ \scorebox { \fp_to_decimal:N \g__ft_total_fp }
+  }
+\NewDocumentCommand \finalscorenotable { O{} }
+  {
+    \vspace{-1.5em}
+    \tl_if_blank:nTF {#1} { \finalscore [ style = formula ] }
+                          { \finalscore [ style = formula , max = {#1} ] }
+  }
+\NewDocumentCommand \AddToTotal { m } { \fp_gadd:Nn \g__ft_total_fp {#1} }
+\NewDocumentCommand \AddToBonus { m } { \fp_gadd:Nn \g__ft_bonus_fp {#1} }
+\NewDocumentCommand \ResetTotal { } { \fp_gzero:N \g__ft_total_fp }
+\NewDocumentCommand \ResetBonus { } { \fp_gzero:N \g__ft_bonus_fp }
+\NewDocumentCommand \DisplayBonus { } { \fp_to_decimal:N \g__ft_bonus_fp }
+\ExplSyntaxOff
+
+\newcommand*{\mathscore}[1]{\score{#1}}
+\newcommand*{\physscore}[1]{\score{#1}}
+\newcommand*{\bonusscore}[1]{\AddToBonus{#1}}
+\newcommand*{\emptyscore}{\colorbox{SubjectColor!12}{~~~}}
+\newcommand*{\simplebonusexercisescore}{\hfill\emptyscorebox}
+\newcommand*{\scorelabel}[1][]{{\small\bfseries\if\relax\detokenize{#1}\relax E\ft@exnum\else #1\fi:}}
+\newcommand*{\intermediatetest}[2]{%
+  \exercise[Test intermedi] Svolti $\;\dotline{1.5em}/#1$. Punti $\;\dotline{1.5em}/#2$.
+  Note: $\dotline{10em}$\hfill\emptyscorebox}
+\newcommand*{\overrideAllColors}[1]{\colorlet{SubjectColor}{#1}}
+\newcommand*{\resetAllColors}{\colorlet{SubjectColor}{MathsBlue}}
+\newcommand*{\setsubject}[1]{\testsetup{subject=#1}}
+\newcommand*{\scoreColor}{SubjectColor}
+\newcommand*{\scoreOpacity}{12}
+\newcommand*{\exmpcolor}{SubjectColor}
+\ExplSyntaxOn
+\cs_new:Npn \ft@exnum { \int_use:N \g__ft_ex_int }
+\ExplSyntaxOff
+
+% --- 11.3 Elenchi a tabella (scoredlist & co.) ----------------------------------
+\newcommand*{\thelistitem}{\alph{ftpart}}
+\newcommand*{\HY}{\hyphenpenalty=30\exhyphenpenalty=30}
+\newcolumntype{H}{>{\HY\arraybackslash}X}
+\newcolumntype{L}{>{\HY\raggedright\arraybackslash}X}
+\newcolumntype{R}{>{\HY\raggedleft\arraybackslash}X}
+\newcolumntype{Y}{>{\HY\centering\arraybackslash}X}
+\newcolumntype{Z}{>{\HY\centering\arraybackslash}X}
+\newcolumntype{P}[1]{>{\centering\arraybackslash}m{#1}}
+
+% vecchio \itemx: [uppercase] (marked) <difficolta'>, seguito da &
+\NewDocumentCommand{\ft@legacyitemx}{O{} D(){} D<>{}}{%
+  \stepcounter{ftpart}%
+  \def\ft@tmp{#3}%
+  \ifx\ft@tmp\@empty\else\llap{\ft@diffmarks{#3}\hspace{.3em}}\fi
+  \def\ft@tmp{#2}\def\ft@tmpb{marked}%
+  \ifx\ft@tmp\ft@tmpb
+    \hlc[SubjectColor!20]{\bfseries\ft@legacylabel{#1}.}%
+  \else
+    \textbf{\ft@legacylabel{#1}.}%
+  \fi &}
+\newcommand*{\ft@legacylabel}[1]{%
+  \def\ft@tmp{#1}\def\ft@tmpb{uppercase}%
+  \ifx\ft@tmp\ft@tmpb\Alph{ftpart}\else\alph{ftpart}\fi}
+\let\itemx\ft@legacyitemx
+
+\ExplSyntaxOn
+\keys_define:nn { fancytests / scoredlist }
+  {
+    stretch .tl_set:N  = \l__ft_sl_stretch_tl ,
+    col     .tl_set:N  = \l__ft_sl_col_tl ,
+    align   .tl_set:N  = \l__ft_sl_align_tl ,
+    start   .int_set:N = \l__ft_sl_start_int ,
+  }
+\cs_new_protected:Npn \__ft_sl_begin:nnnn #1#2#3#4
+  { % chiavi/inizio, (stretch), <colonna>, 'allineamento'
+    \tl_set:Nn \l__ft_sl_stretch_tl { 1 }
+    \tl_set:Nn \l__ft_sl_col_tl { H }
+    \tl_set:Nn \l__ft_sl_align_tl { c }
+    \int_zero:N \l__ft_sl_start_int
+    \IfValueT {#2} { \tl_set:Nn \l__ft_sl_stretch_tl {#2} }
+    \IfValueT {#3} { \tl_set:Nn \l__ft_sl_col_tl {#3} }
+    \IfValueT {#4} { \tl_set:Nn \l__ft_sl_align_tl {#4} }
+    \tl_if_blank:nF {#1}
+      {
+        \tl_if_in:nnTF {#1} { = }
+          { \keys_set:nn { fancytests / scoredlist } {#1} }
+          { \setcounter{ftpart}{#1} }
+      }
+    \int_compare:nNnT \l__ft_sl_start_int > 0
+      { \setcounter{ftpart}{ \int_eval:n { \l__ft_sl_start_int - 1 } } }
+    \cs_set_eq:NN \itemx \ft@legacyitemx
+    \renewcommand{\arraystretch}{ \l__ft_sl_stretch_tl }
+  }
+\ExplSyntaxOff
+
+\NewDocumentEnvironment{scoredlist}{O{} d() d<> d''}{%
+  \par\ignorespaces
+  \csname __ft_sl_begin:nnnn\endcsname{#1}{#2}{#3}{#4}%
+  \SaveCurrentScore
+  \edef\ft@tmp{\noexpand\tabularx{\noexpand\textwidth}{@{\noexpand\hspace{\noexpand\itmindent}}
+    \csname l__ft_sl_align_tl\endcsname @{\noexpand\hspace{\noexpand\questionindent}}
+    \csname l__ft_sl_col_tl\endcsname @{\noexpand\hspace{1.5em}} r @{}}}%
+  \ft@tmp\SetScoreToSaved}
+  {\endtabularx\renewcommand{\arraystretch}{1}}
+
+\NewDocumentEnvironment{splitlist}{O{} D(){1} D<>{H} D||{r}}{%
+  \par\ignorespaces\renewcommand{\arraystretch}{#2}\SaveCurrentScore
+  \let\itemx\ft@legacyitemx
+  \ifx\relax#1\relax\else\setcounter{ftpart}{#1}\fi
+  \tabularx{\textwidth}{@{\hspace{\itmindent}} l @{\hspace{\questionindent}} #3 @{\hspace{.5em}} #4
+    @{\hspace{2em}} l @{\hspace{\questionindent}} #3 @{\hspace{.5em}} #4 @{}}\SetScoreToSaved}
+  {\endtabularx\renewcommand{\arraystretch}{1}}
+\NewDocumentEnvironment{threesplitlist}{O{} D(){1} D<>{H} D||{r}}{%
+  \par\ignorespaces\renewcommand{\arraystretch}{#2}\SaveCurrentScore
+  \let\itemx\ft@legacyitemx
+  \ifx\relax#1\relax\else\setcounter{ftpart}{#1}\fi
+  \tabularx{\textwidth}{@{\hspace{\itmindent}} l @{\hspace{\questionindent}} #3 @{\hspace{.5em}} #4
+    @{\hspace{2em}} l @{\hspace{\questionindent}} #3 @{\hspace{.5em}} #4
+    @{\hspace{2em}} l @{\hspace{\questionindent}} #3 @{\hspace{.5em}} #4 @{}}\SetScoreToSaved}
+  {\endtabularx\renewcommand{\arraystretch}{1}}
+\NewDocumentEnvironment{foursplitlist}{O{} D(){1} D<>{H} D||{r}}{%
+  \par\ignorespaces\renewcommand{\arraystretch}{#2}\SaveCurrentScore
+  \let\itemx\ft@legacyitemx
+  \ifx\relax#1\relax\else\setcounter{ftpart}{#1}\fi
+  \tabularx{\textwidth}{@{\hspace{\itmindent}} l @{\hspace{\questionindent}} #3 @{\hspace{.5em}} #4
+    @{\hspace{2em}} l @{\hspace{\questionindent}} #3 @{\hspace{.5em}} #4
+    @{\hspace{2em}} l @{\hspace{\questionindent}} #3 @{\hspace{.5em}} #4
+    @{\hspace{2em}} l @{\hspace{\questionindent}} #3 @{\hspace{.5em}} #4 @{}}\SetScoreToSaved}
+  {\endtabularx\renewcommand{\arraystretch}{1}}
+
+% Vero/Falso
+\newcommand*{\squarebox}[1]{\framebox{\makebox[\height]{\footnotesize#1}}}
+\newcommand*{\truebox}{\squarebox{V}}
+\newcommand*{\falsebox}{\squarebox{F}}
+\NewDocumentEnvironment{tflist}{O{} D(){1} D<>{L}}{%
+  \par\ignorespaces\renewcommand{\arraystretch}{#2}\SaveCurrentScore
+  \let\itemx\ft@legacyitemx
+  \ifx\relax#1\relax\else\setcounter{ftpart}{#1}\fi
+  \tabularx{\textwidth}{@{\hspace{\itmindent}} l @{\hspace{\questionindent}} #3
+    @{\hspace{2em}} c @{\hspace{.5em}} c @{\hspace{1em}} r @{}}\SetScoreToSaved}
+  {\endtabularx\renewcommand{\arraystretch}{1}}
+\NewDocumentEnvironment{tflistinv}{O{} D(){1} D<>{L}}{%
+  \par\ignorespaces\renewcommand{\arraystretch}{#2}\SaveCurrentScore
+  \let\itemx\ft@legacyitemx
+  \ifx\relax#1\relax\else\setcounter{ftpart}{#1}\fi
+  \tabularx{\textwidth}{@{\hspace{\itmindent}} l @{\hspace{\questionindent}} #3
+    @{\hspace{2em}} c @{\hspace{.5em}} c @{}}\SetScoreToSaved}
+  {\endtabularx\renewcommand{\arraystretch}{1}}
+\NewDocumentEnvironment{splittflist}{O{} D(){1} D<>{L}}{%
+  \par\ignorespaces\renewcommand{\arraystretch}{#2}\SaveCurrentScore
+  \let\itemx\ft@legacyitemx
+  \ifx\relax#1\relax\else\setcounter{ftpart}{#1}\fi
+  \tabularx{\textwidth}{@{\hspace{\itmindent}} l @{\hspace{\questionindent}} #3
+    @{\hspace{2em}} c @{\hspace{.5em}} c @{\hspace{2em}} l @{\hspace{\questionindent}} #3
+    @{\hspace{2em}} c @{\hspace{.5em}} c @{}}\SetScoreToSaved}
+  {\endtabularx\renewcommand{\arraystretch}{1}}
+\NewDocumentCommand{\truefalse}{O{} D(){}}{%
+  & \truebox & \falsebox & \ifx\relax#1\relax\else\score[#2]{#1}\fi}
+\newcommand*{\truefalseinv}[1][]{& \truebox & \falsebox\ifx\relax#1\relax\else\invscore{#1}\fi}
+\newcommand*{\phystf}[1]{\truefalse\score{#1}}
+\newcommand*{\mathtf}[1]{\truefalse\score{#1}}
+
+% --- 11.4 Opzioni a risposta multipla (vecchie macro -> motore choices) ------
+%  Firma comune: {opz1}...{opzN}(stretch)<colonna>|rientro|'spazio dopo'
+\ExplSyntaxOn
+\cs_new_protected:Npn \__ft_legacy_opts:nnnnn #1#2#3#4#5
+  { % #1 colonne, #2 mescola (true/false), #3 ultima fissa (true/false),
+    % #4 {{opz}{opz}...}, #5 {rientro}{spazio}
+    \tl_clear:N \l_tmpa_tl
+    \int_zero:N \l_tmpa_int
+    \tl_map_inline:nn {#4}
+      {
+        \int_incr:N \l_tmpa_int
+        \bool_lazy_and:nnTF { \str_if_eq_p:nn {#3} { true } }
+          { \int_compare_p:nNn \l_tmpa_int = { \tl_count:n {#4} } }
+          { \tl_put_right:Nn \l_tmpa_tl { \choice [ fixed ] ##1 } }
+          { \tl_put_right:Nn \l_tmpa_tl { \choice ##1 } }
+      }
+    \__ft_legacy_opts_aux:nnnnV {#1} {#2} #5 \l_tmpa_tl
+  }
+\cs_new_protected:Npn \__ft_legacy_opts_aux:nnnnn #1#2#3#4#5
+  {
+    \group_begin:
+    \bool_set_true:N \l__ft_ch_openend_bool
+    \__ft_choices:nn { cols = #1 , shuffle = #2 , indent = #3 , after = #4 em } {#5}
+    \group_end:
+  }
+\cs_generate_variant:Nn \__ft_legacy_opts_aux:nnnnn { nnnnV }
+
+\cs_new_protected:Npn \__ft_legacy_define:Nnnnn #1#2#3#4#5
+  { % comando, numero opzioni, colonne, mescola, ultima fissa
+    \int_case:nn {#2}
+      {
+        { 2 } { \NewDocumentCommand #1 { m m D(){1} D<>{X} D||{\itmindent} D''{.25} }
+                  { \__ft_legacy_opts:nnnnn {#3} {#4} {#5} { {##1} {##2} } { {##5} {##6} } } }
+        { 3 } { \NewDocumentCommand #1 { m m m D(){1} D<>{X} D||{\itmindent} D''{.25} }
+                  { \__ft_legacy_opts:nnnnn {#3} {#4} {#5} { {##1} {##2} {##3} } { {##6} {##7} } } }
+        { 4 } { \NewDocumentCommand #1 { m m m m D(){1} D<>{X} D||{\itmindent} D''{.25} }
+                  { \__ft_legacy_opts:nnnnn {#3} {#4} {#5} { {##1} {##2} {##3} {##4} } { {##7} {##8} } } }
+        { 5 } { \NewDocumentCommand #1 { m m m m m D(){1} D<>{X} D||{\itmindent} D''{.25} }
+                  { \__ft_legacy_opts:nnnnn {#3} {#4} {#5} { {##1} {##2} {##3} {##4} {##5} } { {##8} {##9} } } }
+      }
+  }
+%                         comando                         n  col mescola  fissa
+\__ft_legacy_define:Nnnnn \twooptions                     2  2  {false} {false}
+\__ft_legacy_define:Nnnnn \twooptionslist                 2  1  {false} {false}
+\__ft_legacy_define:Nnnnn \fouroptions                    4  2  {false} {false}
+\__ft_legacy_define:Nnnnn \fouroptionslist                4  1  {false} {false}
+\__ft_legacy_define:Nnnnn \fiveoptionslist                5  1  {false} {false}
+\__ft_legacy_define:Nnnnn \randomtwooptions               2  2  {true}  {false}
+\__ft_legacy_define:Nnnnn \randomthreeoptionsline         3  3  {true}  {false}
+\__ft_legacy_define:Nnnnn \randomfouroptions              4  2  {true}  {false}
+\__ft_legacy_define:Nnnnn \randomfouroptionsline          4  4  {true}  {false}
+\__ft_legacy_define:Nnnnn \randomfouroptionslist          4  1  {true}  {false}
+\__ft_legacy_define:Nnnnn \randomfiveoptions              5  2  {true}  {false}
+\__ft_legacy_define:Nnnnn \randomfiveoptionsline          5  5  {true}  {false}
+\__ft_legacy_define:Nnnnn \randomfiveoptionslist          5  1  {true}  {false}
+\__ft_legacy_define:Nnnnn \randomthreeplusoneoptions      4  2  {true}  {true}
+\__ft_legacy_define:Nnnnn \randomthreeplusoneoptionsline  4  4  {true}  {true}
+\__ft_legacy_define:Nnnnn \randomthreeplusoneoptionstwolines 4 2 {true} {true}
+\__ft_legacy_define:Nnnnn \randomthreeplusoneoptionslist  4  1  {true}  {true}
+\__ft_legacy_define:Nnnnn \randomfourplusoneoptionslist   5  1  {true}  {true}
+
+% --- 11.5 Casualita' -------------------------------------------------------------
+\NewDocumentCommand \randOp { m m } { \pick { #1 \or #2 } }
+\NewDocumentCommand \randOpThree { m m m } { \pick { #1 \or #2 \or #3 } }
+\NewDocumentCommand \randOpFour { m m m m } { \pick { #1 \or #2 \or #3 \or #4 } }
+\NewDocumentCommand \randSign { } { \pick { + \or - } }
+\NewDocumentCommand \genRandIntR { m m } { \tl_set:Nx \theInt { \int_rand:nn {#1} {#2} } }
+\NewDocumentCommand \genRandInt { } { \tl_set:Nx \theInt { \int_rand:nn {1} {9} } }
+\NewDocumentCommand \genRandNZInt { }
+  { \tl_set:Nx \theInt { \int_eval:n { \int_rand:nn {1} {9} * ( 2 * \int_rand:nn {0} {1} - 1 ) } } }
+\tl_new:N \theInt
+\ExplSyntaxOff
+\newcommand*{\randIntR}[2]{\genRandIntR{#1}{#2}\theInt}
+\newcommand*{\randNZIntR}[2]{\genRandIntR{#1}{#2}\theInt}
+\newcommand*{\randInt}{\genRandInt\theInt}
+\newcommand*{\randNZInt}{\genRandNZInt\theInt}
+
+% liste casuali di pgf usate direttamente nei documenti
+\newcommand\lengthof[1]{\csname pgfmath@randomlist@#1\endcsname}
+\newcommand\nthof[2]{\csname pgfmath@randomlist@#2@#1\endcsname}
+\def\prunelist#1{%
+  \expandafter\edef\csname pgfmath@randomlist@#1\endcsname
+    {\the\numexpr\csname pgfmath@randomlist@#1\endcsname-1\relax}%
+  \count@\pgfmath@randomtemp
+  \loop
+    \expandafter\let
+    \csname pgfmath@randomlist@#1@\the\count@\expandafter\endcsname
+    \csname pgfmath@randomlist@#1@\the\numexpr\count@+1\relax\endcsname
+  \ifnum\count@<\csname pgfmath@randomlist@#1\endcsname\relax
+    \advance\count@\@ne
+  \repeat}
+
+% --- 11.6 Varie -------------------------------------------------------------------
+\newenvironment{notex*}[1][Nota]
+  {\par\smallskip\noindent\begin{minipage}{\linewidth}%
+   \color{black}\small\textbf{#1:}\hspace{.5em}\ignorespaces}
+  {\end{minipage}\par\smallskip}
+\newcommand*{\mathsol}[1]{\textcolor{MathsBlue}{#1}}
+\newcommand*{\physsol}[1]{\textcolor{PhysicsGreen}{#1}}
+\newcommand*{\highmath}[1]{\colorbox{MathsBlue!15}{#1}}
+\newcommand*{\highphys}[1]{\colorbox{PhysicsGreen!15}{#1}}
+\newcommand*{\unmeter}{\unm{m}}
+\newcommand*{\unkm}{\unm{km}}
+\newcommand*{\unsec}{\unm{s}}
+\newcommand*{\unhour}{\unm{h}}
+\newcommand*{\unmpers}{\sunm{m}{s}}
+\newcommand*{\unmperss}{\sunm[2]{m}{s}}
+\newcommand*{\unkperh}{\sunm{km}{h}}
+
+\endinput
