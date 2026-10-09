@@ -907,15 +907,20 @@
       }
   }
 
-\cs_new_protected:Npn \__ft_itemx:n #1
+\cs_new_protected:Npn \__ft_item_keys:n #1
   {
-    \__ft_close_skip:      % prima di leggere le chiavi: \egroup ripristina i valori locali
     \tl_clear:N \l__ft_it_pts_tl
     \tl_clear:N \l__ft_it_diff_tl
     \bool_set_false:N \l__ft_it_mark_bool
     \bool_set_false:N \l__ft_it_upper_bool
     \bool_set_false:N \l__ft_it_noreduced_bool
     \keys_set:nn { fancytests / item } {#1}
+  }
+
+\cs_new_protected:Npn \__ft_itemx:n #1
+  {
+    \__ft_close_skip:      % prima di leggere le chiavi: \egroup ripristina i valori locali
+    \__ft_item_keys:n {#1}
     \bool_if:nTF { \l__ft_it_noreduced_bool && \legacy_if_p:n { ft@reduced } }
       {
         % quesito omesso nella versione ridotta: composto e scartato
@@ -926,6 +931,9 @@
       }
       {
         \__ft_close_cell:
+        % con piu' colonne la chiusura della cella precedente (\egroup)
+        % ripristina i valori locali: le chiavi vanno rilette
+        \int_compare:nNnT \l__ft_parts_cols_int > 1 { \__ft_item_keys:n {#1} }
         \int_compare:nNnT \l__ft_parts_cols_int > 1
           {
             \int_incr:N \l__ft_parts_cell_int
