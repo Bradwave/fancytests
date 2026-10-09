@@ -4,7 +4,7 @@ All notable changes to `fancytests` are listed here.
 Versions follow [semantic versioning](https://semver.org): a new major
 version may change existing commands; minor versions only add features.
 
-## [2.0] — 2026-10-09
+## [1.0] — 2026-10-09
 
 First release of `fancytests`, the streamlined successor of the test part of
 `fancylessons`.

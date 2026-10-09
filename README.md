@@ -59,7 +59,7 @@ https://raw.githubusercontent.com/Bradwave/fancytests/main/fancytests.sty
 
 Overleaf keeps a linked copy: the *Refresh* button downloads the latest
 version. To freeze a project on a specific release (recommended for tests
-already given), use a tag instead of `main`, e.g. `…/fancytests/v2.0/fancytests.sty`.
+already given), use a tag instead of `main`, e.g. `…/fancytests/v1.0/fancytests.sty`.
 
 Requires TeX Live 2023 or later (on Overleaf: *Menu → Settings → TeX Live
 version*).
