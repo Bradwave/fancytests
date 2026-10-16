@@ -1,0 +1,327 @@
+\documentclass[10pt]{article}
+
+%% Verifica: equazioni e disequazioni - classe 3F, scienze applicate (2 ore)
+%% Opzioni utili:  answers (copia docente con soluzioni), nofigures (bozza veloce)
+\usepackage[seed=2026]{fancytests}
+\usepackage{lmodern}
+\renewcommand*\familydefault{\sfdefault}
+\usepackage[T1]{fontenc}
+
+\geometry{a4paper, top=15mm, bottom=15mm, left=17.5mm, right=17.5mm}
+\linespread{1.25}
+
+% voto da 1 a 10, punteggio in diciottesimi
+\testsetup{class=3F, dsa=none, grade-min=1, grade-max=10, style=compact,
+  labels=boxed, mcq=band, showversion}
+
+% versione ridotta per DSA: si compila verifica-3F-DSA.tex, che definisce
+% \versioneDSA e include questo file (quesiti marcati noreduced omessi)
+\ifdefined\versioneDSA \testsetup{reduced, dsa=rid, showversion=false}\fi
+
+% indicatori di difficolta': visibili solo nella copia docente (opzione answers)
+\makeatletter
+\ifft@answers\else\renewcommand*{\ft@diffmarks}[1]{}\fi
+\makeatother
+
+% grafici per i quiz
+\pgfplotsset{quiz/.style={width=6.1cm, height=4.7cm, legend style={font=\scriptsize},
+  tick label style={font=\scriptsize}}}
+
+\begin{document}
+
+%% ---------------------------------------------------------------------------
+%% Una copia della verifica. Le 7 versioni (sotto) differiscono solo per
+%% l'ordine delle opzioni dei quiz; il numero di versione compare accanto alla
+%% classe (#1 ... #7) e nella chiave <nomefile>.key.csv.
+%% ---------------------------------------------------------------------------
+\newcommand{\verifica}{%
+
+\testheader[date=15/10/2026, title={Equazioni e disequazioni}]
+
+%% =========================================================================
+\exercise Risolvi le seguenti equazioni e disequazioni con il metodo che più ritieni opportuno.
+
+\begin{parts}[cols=2, stretch=1.6]
+  \itemx[pts=1] $x^3 + 2x^2 - 8x \geq 0$
+  \itemx[pts=1] $(x^3 - 8)(x + 1)^2(x^2 + x + 1)(x^2 - 9) \leq 0$
+  \itemx[pts=1] $\abs{2x - 1} > x + 4$
+  \itemx[pts=1, noreduced] $\dfrac{\sqrt{3 - x}\,(x^2 - 4)}{\abs{x} - 1} \geq 0$
+  \itemx[pts=1, diff=3] $\sqrt{x^2 - 4x + 3} < 2x - 3$
+  \itemx[pts=1, diff=2] $\sqrt{x + 5} - \sqrt{x - 3} > 2$
+\end{parts}
+\exercisescore
+
+\begin{solution}
+a) $x(x+4)(x-2) \geq 0$: $-4 \leq x \leq 0 \lor x \geq 2$.
+b) $x^3 - 8 = (x-2)(x^2+2x+4)$; $x^2+2x+4$ e $x^2+x+1$ sono sempre positivi; $(x+1)^2 \geq 0$ si
+annulla in $-1$. Il segno è quello di $(x-2)(x-3)(x+3)$: $x \leq -3 \lor x = -1 \lor 2 \leq x \leq 3$.
+c) $x < -1 \lor x > 5$.
+d) C.E.: $x \leq 3$, $x \neq \pm 1$; $x = 3$ è soluzione (radice nulla). Altrove conta il segno di
+$\frac{x^2-4}{\abs{x}-1}$: $x \leq -2 \lor -1 < x < 1 \lor 2 \leq x \leq 3$.
+e) Servono $x^2 - 4x + 3 \geq 0$ ($x \leq 1 \lor x \geq 3$), $2x - 3 > 0$ ($x > \frac32$) e, elevando al quadrato,
+$x^2 - 4x + 3 < 4x^2 - 12x + 9 \iff 3x^2 - 8x + 6 > 0$, sempre vera ($\Delta < 0$). Soluzione: $x \geq 3$.
+f) C.E.: $x \geq 3$. $\sqrt{x+5} > 2 + \sqrt{x-3}$, entrambi i membri positivi: $x + 5 > 4 + 4\sqrt{x-3} + x - 3
+\iff \sqrt{x - 3} < 1 \iff 0 \leq x - 3 < 1$. Soluzione: $3 \leq x < 4$.
+\end{solution}
+
+%% =========================================================================
+\exercise Rispondi ai seguenti quesiti (punteggio parziale per risposte errate ma motivate in modo adeguato).
+Indica la risposta e riportane la lettera nella tabella in fondo alla verifica.
+
+\vspace{.8em}
+\noindent
+\begin{minipage}[c]{.35\linewidth}
+  \centering
+  \begin{ftplot}[quiz, xmin=-4.9, xmax=4.9, ymin=-4.9, ymax=4.9, legend pos=south east]
+    \fplot[domain=-4.9:4.9]{0.1*(x+3)*(x-1)^2*(x-4)}[$f(x)$]
+  \end{ftplot}
+\end{minipage}\hfill
+\begin{minipage}[c]{.64\linewidth}
+  \begin{parts}[ragged]
+    \itemx[pts=0.5, diff=1] Quale può essere l'espressione della funzione $f(x)$ rappresentata in figura?
+      \begin{choices}[cols=1]
+        \correct $f(x) = \frac{1}{10}(x+3)(x-1)^2(x-4)$
+        \choice $f(x) = \frac{1}{10}(x-3)(x+1)^2(x+4)$
+        \choice $f(x) = \frac{1}{10}(x+3)(x-1)(x-4)$
+        \choice $f(x) = -\frac{1}{10}(x+3)(x-1)^2(x-4)$
+      \end{choices}
+  \end{parts}
+\end{minipage}
+
+\begin{parts}
+  \itemx[pts=0.5, diff=2] Quale disequazione ha come insieme delle soluzioni quello rappresentato in figura?
+    \begin{center}
+      \begin{tikzpicture}[x=.7cm]
+        \draw[-{Stealth[length=2mm]}] (-5.5,0) -- (5.5,0) node[right] {$x$};
+        \foreach \t in {-5,...,5} \draw (\t,.08) -- (\t,-.08) node[below] {\scriptsize $\t$};
+        \draw[line width=2pt] (-5.4,0) -- (-2,0);
+        \draw[line width=2pt] (3,0) -- (5.4,0);
+        \fill (-2,0) circle (3pt) (1,0) circle (3pt) (3,0) circle (3pt);
+      \end{tikzpicture}
+    \end{center}
+    \begin{choices}
+      \correct $(x+2)(x-1)^2(x-3) \geq 0$
+      \choice $(x+2)(x-1)^2(x-3) > 0$
+      \choice $(x+2)(x-1)(x-3) \geq 0$
+      \choice $(x-2)(x+1)^2(x+3) \geq 0$
+    \end{choices}
+\end{parts}
+
+\smallskip
+\noindent
+\begin{minipage}[c]{.35\linewidth}
+  \centering
+  \begin{ftplot}[quiz, xmin=-4.9, xmax=2.9, ymin=-1.9, ymax=2.4, ytick={-1,0,1,2},
+                 minor tick num=1, legend pos=south east]
+    \fplot[domain=-4.9:2.9, samples=120]{(x+4)*x*(x-1)/12}[$g(x)$]
+  \end{ftplot}
+\end{minipage}\hfill
+\begin{minipage}[c]{.64\linewidth}
+  \begin{parts}[ragged]
+    \itemx[pts=0.5, diff=2] Con $g(x)$ in figura, per quali valori di $x$ si ha $\sqrt{g(x)} \leq 1$?
+      \begin{choices}[cols=1]
+        \correct $[-4, -3] \cup [-2, 0] \cup [1, 2]$
+        \choice $(-4, -3) \cup (-2, 0) \cup (1, 2)$
+        \choice $[-4, 0] \cup [1, +\infty)$
+        \choice $(-\infty, -3] \cup [-2, 2]$
+      \end{choices}
+  \end{parts}
+\end{minipage}
+
+\smallskip
+\noindent
+\begin{minipage}[c]{.35\linewidth}
+  \centering
+  \begin{ftplot}[quiz, xmin=-3.9, xmax=3.9, ymin=-3.9, ymax=3.9]
+    \fplot[domain=-3.9:3.9]{-0.5*(x+2)*(x-2)}[$A(x)$]
+  \end{ftplot}
+\end{minipage}\hfill
+\begin{minipage}[c]{.64\linewidth}
+  \begin{parts}[ragged]
+    \itemx[pts=0.5, diff=2] In figura è rappresentato il grafico di $A(x)$. Sia $B(x) = x - 1$. Per quali valori di $x$ si ha $\dfrac{A(x)}{B(x)} \leq 0$?
+      \begin{choices}
+        \correct $[-2, 1) \cup [2, +\infty)$
+        \choice $[-2, 1] \cup [2, +\infty)$
+        \choice $(-\infty, -2] \cup (1, 2]$
+        \choice $(-2, 1) \cup (2, +\infty)$
+      \end{choices}
+  \end{parts}
+\end{minipage}
+
+\begin{parts}
+  \itemx[pts=0.5, diff=2] Per quale valore di $k$ l'equazione $\abs{x^2 - 2x - 3} = k$ ammette esattamente tre soluzioni reali distinte?
+    \begin{choices}
+      \correct $k = 4$
+      \choice $k = 0$
+      \choice $k = 2$
+      \choice[fixed] Nessun valore di $k$
+    \end{choices}
+\end{parts}
+
+\smallskip
+\noindent
+\begin{minipage}[c]{.35\linewidth}
+  \centering
+  \begin{ftplot}[quiz, xmin=-3.9, xmax=3.9, ymin=-3.9, ymax=3.9]
+    \fplot[domain=-3.9:3.9]{0.5*(x+2)*(x-1)^2}[$f(x)$]
+  \end{ftplot}
+\end{minipage}\hfill
+\begin{minipage}[c]{.64\linewidth}
+  \begin{parts}[ragged]
+    \itemx[pts=0.5, diff=3] Con $f(x)$ in figura, per quale funzione $g(x)$ si ha $f(x) \cdot g(x) \geq 0$ per ogni $x \in \spR$?
+      \begin{choices}
+        \correct $g(x) = x + 2$
+        \choice $g(x) = x - 1$
+        \choice $g(x) = (x + 2)^2$
+        \choice $g(x) = x^2 + 2$
+      \end{choices}
+  \end{parts}
+\end{minipage}
+
+\begin{parts}
+  \itemx[pts=0.5, diff=3, noreduced] Per quale valore di $k$ l'insieme delle soluzioni della disequazione $x^2(x - k) \geq 0$ è $x = 0 \lor x \geq 3$?
+    \begin{choices}
+      \correct $k = 3$
+      \choice $k = 0$
+      \choice $k = -3$
+      \choice[fixed] Nessun valore di $k$
+    \end{choices}
+\end{parts}
+
+\smallskip
+\noindent
+\begin{minipage}[c]{.35\linewidth}
+  \centering
+  \begin{ftplot}[quiz, xmin=-3.9, xmax=3.9, ymin=-3.9, ymax=3.9]
+    \fplot[domain=-3.9:3.9]{0.5*x*(x^2-4)}[$f(x)$]
+  \end{ftplot}
+\end{minipage}\hfill
+\begin{minipage}[c]{.64\linewidth}
+  \begin{parts}[ragged]
+    \itemx[pts=0.5, diff=3] In figura è rappresentato il grafico di $f(x)$. Quante soluzioni reali ammette l'equazione $\abs{f(x)} = f(x) + 2$?
+      \begin{choices}
+        \correct Tre
+        \choice Nessuna
+        \choice Una
+        \choice Due
+      \end{choices}
+  \end{parts}
+\end{minipage}
+
+\begin{solution}
+c) $\sqrt{g} \leq 1 \iff 0 \leq g(x) \leq 1$: $g \geq 0$ su $[-4, 0] \cup [1, +\infty)$, $g \leq 1$ per
+$x \leq -3 \lor -2 \leq x \leq 2$.
+e) Il vertice di $x^2-2x-3$ è $(1,-4)$, quindi $\abs{\cdot}$ ha un massimo relativo $4$ in $x=1$.
+g) $x^2 \geq 0$: serve $x - k \geq 0$, più lo zero $x = 0$; quindi $k = 3$.
+h) Se $f \geq 0$ l'equazione è impossibile; se $f < 0$ diventa $f(x) = -1$, che ha tre intersezioni.
+\end{solution}
+
+%% =========================================================================
+\exercise Rispondi ai seguenti quesiti, motivando le risposte.
+
+\begin{parts}[stretch=1.4]
+  \itemx[pts=1.5, diff=2] Rappresenta nello stesso piano cartesiano i grafici delle funzioni $f(x) = \abs{x^2 - 4}$ e $g(x) = x + 2$, quindi utilizzali per risolvere la disequazione $f(x) \leq g(x)$. Verifica il risultato per via algebrica.
+  \itemx[pts=1.5, diff=3, noreduced] Determina per quali valori del parametro $k \in \spR$ l'equazione $\sqrt{x + 4} = x + k$ ammette esattamente due soluzioni reali distinte.
+\end{parts}
+
+\smallskip
+\noindent
+\begin{minipage}[c]{.35\linewidth}
+  \centering
+  \begin{ftplot}[quiz, xmin=-4.9, xmax=5.9, ymin=-5.9, ymax=4.9, legend style={at={(0.4,0.97)}, anchor=north},
+                 xtick distance=2, ytick distance=2, minor tick num=1]
+    \fplot[domain=-4.9:5.9]{-0.25*(x+3)*(x-1)*(x-4)}[$f(x)$]
+  \end{ftplot}
+\end{minipage}\hfill
+\begin{minipage}[c]{.64\linewidth}
+  \begin{parts}[ragged]
+    \itemx[pts=1.5, diff=3] In figura è rappresentato il grafico di $f(x)$. Disegna nello stesso piano il grafico di una funzione $g(x)$ tale che $f(x) \cdot g(x) > 0$ esclusivamente per $x \in (1, 4)$, quindi scrivine l'espressione analitica.
+  \end{parts}
+\end{minipage}
+
+\begin{solution}
+a) $x = -2 \lor 1 \leq x \leq 3$ (la retta passa per il punto di tangenza $(-2,0)$).
+b) Retta per $(-4,0)$: $k = 4$; tangenza: $\Delta = 17 - 4k = 0$, $k = \frac{17}{4}$. Due soluzioni per $4 \leq k < \frac{17}{4}$.
+c) $g$ deve essere positiva in $(1, 4)$, dove $f > 0$, e non deve rendere positivo il prodotto
+altrove: $g \geq 0$ dove $f < 0$ (cioè in $(-3, 1)$ e per $x > 4$), $g \leq 0$ per $x < -3$. Ad es.
+$g(x) = x + 3$, che cambia segno proprio in $-3$.
+\end{solution}
+
+%% =========================================================================
+\exercise In laboratorio si localizza una sorgente sonora con due microfoni $M_1$ e $M_2$, fissati
+a una parete rettilinea a $\qty{4}{m}$ l'uno dall'altro. La sorgente $P$ si trova su una retta $r$
+parallela alla parete, a $\qty{3}{m}$ da essa. Su $r$ si fissa un asse con origine nel punto $O$ di $r$
+più vicino a $M_1$, orientato verso $M_2$: $P$ ha ascissa $x$ (in m). Il sistema misura il ritardo
+tra gli istanti in cui il suono raggiunge i due microfoni; la velocità del suono è $v = \qty{343}{m/s}$.
+
+\vspace{.5em}
+\noindent
+\begin{minipage}[c]{.3\linewidth}
+  \centering
+  \begin{tikzpicture}[scale=.55]
+    \fill[ground] (-2.2,3) rectangle (6.2,3.35);
+    \draw[thick] (-2.2,3) -- (6.2,3);
+    \fill (0,3) circle (3pt) node[below] {\scriptsize $M_1$};
+    \fill (4,3) circle (3pt) node[below] {\scriptsize $M_2$};
+    \draw[dimension] (0,3.75) -- node[above] {\scriptsize $\qty{4}{m}$} (4,3.75);
+    \draw[dashed] (-2.2,0) -- (6.2,0) node[right] {\scriptsize $r$};
+    \draw[dimension] (-1.6,0) -- node[left] {\scriptsize $\qty{3}{m}$} (-1.6,3);
+    \fill (0,0) circle (2pt) node[below] {\scriptsize $O$};
+    \fill (2.8,0) circle (3pt) node[below] {\scriptsize $P$};
+    \foreach \r in {.35,.6,.85} \draw[black!50] (2.8,0) ++(30:\r) arc (30:150:\r);
+  \end{tikzpicture}
+\end{minipage}\hfill
+\begin{minipage}[c]{.68\linewidth}
+  \begin{parts}[stretch=1.4]
+    \itemx[pts=2, diff=2] Il suono emesso da $P$ raggiunge $M_2$ con $\qty{5.83}{ms}$ di anticipo rispetto a $M_1$. Determina la posizione di $P$, discutendo l'accettabilità delle soluzioni.
+    \itemx[pts=1.5, diff=3] Il sistema registra soltanto il valore assoluto del ritardo, senza indicare quale microfono è stato raggiunto per primo. Per quali posizioni di $P$ il ritardo registrato non supera $\qty{5.83}{ms}$?
+  \end{parts}
+\end{minipage}
+
+\begin{solution}
+Per Pitagora $PM_1 = \sqrt{x^2 + 9}$, $PM_2 = \sqrt{(x - 4)^2 + 9}$. Differenza di percorso
+corrispondente a $\qty{5.83}{ms}$: $343 \cdot 0.00583 \approx \qty{2.00}{m}$.
+
+a) $\sqrt{x^2 + 9} - \sqrt{(x-4)^2 + 9} = 2 \iff \sqrt{x^2 + 9} = 2 + \sqrt{(x-4)^2 + 9}$. Elevando al
+quadrato: $x^2 + 9 = 4 + 4\sqrt{(x-4)^2 + 9} + x^2 - 8x + 25$, cioè $2x - 5 = \sqrt{(x-4)^2 + 9}$, che
+richiede $x \geq \frac52$. Elevando ancora: $4x^2 - 20x + 25 = x^2 - 8x + 25 \iff 3x(x - 4) = 0$.
+$x = 0$ non è accettabile ($2x - 5 < 0$; infatti in $x = 0$ è $M_1$ a essere raggiunto per primo),
+quindi $x = 4$: $P$ è di fronte a $M_2$ ($PM_2 = 3$, $PM_1 = 5$).
+
+b) Si chiede $\abs{\sqrt{x^2 + 9} - \sqrt{(x-4)^2 + 9}} \leq 2$. La differenza $d(x) = PM_1 - PM_2$ cresce
+con $x$ (avvicinandosi a $M_2$ ci si allontana da $M_1$ e viceversa; algebricamente si verifica con le
+stesse elevazioni al quadrato del punto a) e vale $-2$ per $x = 0$ (per simmetria) e $2$ per $x = 4$.
+Quindi $-2 \leq d(x) \leq 2 \iff 0 \leq x \leq 4$: la sorgente si trova tra le proiezioni dei due
+microfoni su $r$.
+\end{solution}
+
+%% =========================================================================
+\bonusexercise Esiste una disequazione polinomiale di quarto grado avente come insieme delle soluzioni l'intervallo $(-\infty, 2)$? E di terzo grado? Motiva le risposte e, se possibile, fornisci un esempio.
+\bonusexercisescore[1]
+\vspace{-.2em}
+\bonusexercisenote
+
+\begin{solution}
+Grado 4: no, $P(x)$ ha lo stesso segno per $x \to \pm\infty$, quindi non può essere negativo
+solo a sinistra. Grado 3: sì, ad es. $(x-2)(x^2+1) < 0$.
+\end{solution}
+
+\vfill
+\answergrid
+\finalscore
+\newpage}
+
+%% sette versioni, ciascuna con il proprio seme (riproducibili);
+%% la versione DSA usa il seme della versione 1
+\ifdefined\versioneDSA
+\setseed{101}\verifica
+\else
+\setseed{101}\verifica
+\setseed{102}\verifica
+\setseed{103}\verifica
+\setseed{104}\verifica
+\setseed{105}\verifica
+\setseed{106}\verifica
+\setseed{107}\verifica
+\fi
+\end{document}

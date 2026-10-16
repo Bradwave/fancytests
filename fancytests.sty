@@ -1,6 +1,6 @@
 %% =========================================================================
 %%  fancytests.sty  --  verifiche di Matematica e Fisica
-%%  v1.1.0 (2026-10-16)  -  Matteo Bramardi
+%%  v1.2.0 (2026-10-16)  -  Matteo Bramardi
 %%  Erede snello di fancylessons.sty, solo per le verifiche.
 %%
 %%  This work may be distributed and/or modified under the conditions of
@@ -32,7 +32,7 @@
 %% =========================================================================
 
 \NeedsTeXFormat{LaTeX2e}[2022-11-01]
-\ProvidesPackage{fancytests}[2026-10-16 v1.1.0 Verifiche di matematica e fisica]
+\ProvidesPackage{fancytests}[2026-10-16 v1.2.0 Verifiche di matematica e fisica]
 
 %% =========================================================================
 %% 1. Opzioni
@@ -434,6 +434,8 @@
     motivation  .tl_gset:N = \g__ft_motiv_tl ,
     motivation-style .choices:nn = { blank , grid }
                   { \tl_gset_eq:NN \g__ft_motivstyle_tl \l_keys_choice_tl } ,
+    margin-mark .choices:nn = { side , below }
+                  { \tl_gset_eq:NN \g__ft_mmarkpos_tl \l_keys_choice_tl } ,
     motivation-mark .choices:nn = { line , below , label }
                   { \tl_gset_eq:NN \g__ft_mmark_tl \l_keys_choice_tl } ,
     grid-frame  .choices:nn = { cells , rules , lines }
@@ -466,6 +468,7 @@
 \tl_gset:Nn \g__ft_motiv_tl { 0 }
 \tl_new:N \g__ft_motivstyle_tl   \tl_gset:Nn \g__ft_motivstyle_tl { blank }
 \tl_new:N \g__ft_mmark_tl        \tl_gset:Nn \g__ft_mmark_tl { below }
+\tl_new:N \g__ft_mmarkpos_tl     \tl_gset:Nn \g__ft_mmarkpos_tl { side }
 \tl_new:N \g__ft_gridframe_tl    \tl_gset:Nn \g__ft_gridframe_tl { rules }
 \bool_new:N \g__ft_legend_done_bool
 \cs_new_protected:Npn \ft@newtest
@@ -901,14 +904,33 @@
     \ignorespaces
   }
 
-% come sopra, con la casella M (motivazione) a sinistra del punteggio
+% come sopra, con il segno M (motivazione) a sinistra del punteggio
+% (margin-mark=side) oppure centrato sotto di esso (margin-mark=below)
 \cs_new_protected:Npn \__ft_put_score_m:n #1
   {
     \dim_set:Nn \l_tmpa_dim { \linewidth + \rightmargin }
-    \hbox_set:Nn \l_tmpa_box
+    \bool_lazy_and:nnTF
+      { \str_if_eq_p:Vn \g__ft_mmarkpos_tl { below } }
+      { ! \tl_if_empty_p:n {#1} }
       {
-        \ft@mbox
-        \tl_if_empty:nF {#1} { \hspace{.4em} \__ft_box:nn { } {#1} }
+        % riquadro del punteggio, con il segno centrato sotto
+        \hbox_set:Nn \l_tmpb_box { \__ft_box:nn { } {#1} }
+        \hbox_set:Nn \l_tmpa_box
+          {
+            \box_use:N \l_tmpb_box
+            \hbox_overlap_left:n
+              {
+                \hbox_to_wd:nn { \box_wd:N \l_tmpb_box }
+                  { \hss \smash { \raisebox { -1.35em } { \ft@mbox } } \hss }
+              }
+          }
+      }
+      {
+        \hbox_set:Nn \l_tmpa_box
+          {
+            \ft@mbox
+            \tl_if_empty:nF {#1} { \hspace{.4em} \__ft_box:nn { } {#1} }
+          }
       }
     \dim_sub:Nn \l_tmpa_dim { \box_wd:N \l_tmpa_box }
     \leavevmode
@@ -1173,6 +1195,8 @@
 %  Segno M (motivazione), compilato dagli studenti:
 %     segno di spunta = motivata qui,  F = motivata su foglio a parte.
 %  \testsetup{motivation-mark=line|below|label}   aspetto del segno (below)
+%  \testsetup{margin-mark=side|below}             con mcq=margin: segno accanto
+%                                                 o sotto il punteggio (side)
 %  \testsetup{grid-frame=cells|rules|lines}       bordi della tabella (rules)
 
 % segno M (motivazione): breve linea grigia, con tre varianti

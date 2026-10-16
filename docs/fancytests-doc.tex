@@ -88,7 +88,7 @@
   \Large\mdseries Maths and physics tests in \LaTeX}
 \author{Matteo Bramardi\\[.2em]
   \normalsize co-authored with Claude (Anthropic)}
-\date{Version 1.1.0 --- October 2026}
+\date{Version 1.2.0 --- October 2026}
 
 \begin{document}
 \pagestyle{plain}
@@ -293,6 +293,8 @@ preamble it sets the defaults of the document; the same keys can be given to
 \key{motivation-mark} & \opt{below} & Look of the motivation mark:
   \opt{line}, \opt{below} (line with a tiny M underneath) or \opt{label}
   (tiny M before the line).\\
+\key{margin-mark} & \opt{side} & With \opt{mcq=margin}: motivation mark
+  left of the score box (\opt{side}) or centred below it (\opt{below}).\\
 \key{grid-frame} & \opt{rules} & Frame of the answer table: \opt{cells},
   \opt{rules} or \opt{lines} (section~\ref{sec:answertable}).\\
 \key{shuffle} & \opt{true} & Shuffle multiple-choice options.\\
@@ -711,7 +713,9 @@ itself. The same holds for the first compilation with \opt{mcq=band} or
 \paragraph{The margin layout (\opt{mcq=margin}).} No table: the motivation
 mark appears in the right margin, just left of the score box of each
 multiple-choice question, and the legend is printed once, after the first
-multiple-choice question of the copy.
+multiple-choice question of the copy. With
+\cs{testsetup}\verb|{margin-mark=below}| the mark goes centred below the score
+box instead, in the space that is usually empty there.
 
 \begin{example}
 \testsetup{mcq=margin}
@@ -720,7 +724,12 @@ multiple-choice question of the copy.
   \itemx[pts=1] Quale funzione è sempre crescente?
     \begin{choices}\correct $e^x$ \choice $e^{-x}$ \choice $-\ln x$\end{choices}
 \end{parts}
-\testsetup{mcq=none}
+\testsetup{margin-mark=below}
+\begin{parts}
+  \itemx[pts=1] $\log_2 8$ vale
+    \begin{choices}\correct 3 \choice 4 \choice 8 \choice 16\end{choices}
+\end{parts}
+\testsetup{mcq=none, margin-mark=side}
 \end{example}
 
 \paragraph{Motivation space.} Off by default. \key{motivation=}\meta{lines}

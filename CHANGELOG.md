@@ -4,6 +4,13 @@ All notable changes to `fancytests` are listed here.
 Versions follow [semantic versioning](https://semver.org): a new major
 version may change existing commands; minor versions only add features.
 
+## [1.2.0] — 2026-10-16
+
+### Added
+- `\testsetup{margin-mark=side|below}`: with `mcq=margin`, the motivation mark
+  can go centred below the score box (`below`) instead of on its left
+  (`side`, default).
+
 ## [1.1.0] — 2026-10-16
 
 ### Added
