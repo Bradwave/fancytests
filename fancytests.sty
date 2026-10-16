@@ -1,6 +1,6 @@
 %% =========================================================================
 %%  fancytests.sty  --  verifiche di Matematica e Fisica
-%%  v1.0 (2026-10-09)  -  Matteo Bramardi
+%%  v1.1.0 (2026-10-16)  -  Matteo Bramardi
 %%  Erede snello di fancylessons.sty, solo per le verifiche.
 %%
 %%  This work may be distributed and/or modified under the conditions of
@@ -32,7 +32,7 @@
 %% =========================================================================
 
 \NeedsTeXFormat{LaTeX2e}[2022-11-01]
-\ProvidesPackage{fancytests}[2026-10-09 v1.0 Verifiche di matematica e fisica]
+\ProvidesPackage{fancytests}[2026-10-16 v1.1.0 Verifiche di matematica e fisica]
 
 %% =========================================================================
 %% 1. Opzioni
@@ -419,7 +419,7 @@
                   { \tl_set_eq:NN \ft@hstyle \l_keys_choice_tl } ,
     titlebreak  .choices:nn = { auto , always , never }
                   { \tl_set_eq:NN \ft@tbreak \l_keys_choice_tl } ,
-    labels      .choices:nn = { box , letters }
+    labels      .choices:nn = { box , letters , boxed }
                   { \tl_set_eq:NN \ft@labels \l_keys_choice_tl } ,
     shuffle     .bool_gset:N = \g__ft_shuffle_bool ,
     decimal     .tl_gset:N = \g__ft_decimal_tl ,
@@ -429,6 +429,15 @@
     autoclose   .bool_gset:N = \g__ft_autoclose_bool ,
     final       .tl_gset:N = \g__ft_finstyle_default_tl ,
     shuffleparts .bool_gset:N = \g__ft_shuffleparts_bool ,
+    mcq         .choices:nn = { none , band , margin }
+                  { \tl_gset_eq:NN \g__ft_mcq_tl \l_keys_choice_tl } ,
+    motivation  .tl_gset:N = \g__ft_motiv_tl ,
+    motivation-style .choices:nn = { blank , grid }
+                  { \tl_gset_eq:NN \g__ft_motivstyle_tl \l_keys_choice_tl } ,
+    motivation-mark .choices:nn = { line , below , label }
+                  { \tl_gset_eq:NN \g__ft_mmark_tl \l_keys_choice_tl } ,
+    grid-frame  .choices:nn = { cells , rules , lines }
+                  { \tl_gset_eq:NN \g__ft_gridframe_tl \l_keys_choice_tl } ,
     shuffleparts .default:n  = true ,
     seed        .code:n = { \tl_gset:Nn \ft@seed {#1} \setseed {#1} } ,
   }
@@ -453,11 +462,18 @@
 % bridge per il codice di impaginazione
 \cs_new:Npn \ft@version { \int_use:N \g__ft_version_int }
 \cs_new:Npn \ft@opacity { \g__ft_opacity_tl }
+\tl_new:N \g__ft_mcq_tl          \tl_gset:Nn \g__ft_mcq_tl { none }
+\tl_gset:Nn \g__ft_motiv_tl { 0 }
+\tl_new:N \g__ft_motivstyle_tl   \tl_gset:Nn \g__ft_motivstyle_tl { blank }
+\tl_new:N \g__ft_mmark_tl        \tl_gset:Nn \g__ft_mmark_tl { below }
+\tl_new:N \g__ft_gridframe_tl    \tl_gset:Nn \g__ft_gridframe_tl { rules }
+\bool_new:N \g__ft_legend_done_bool
 \cs_new_protected:Npn \ft@newtest
   {
     \__ft_autoclose:
     \__ft_reset_all:
     \int_gincr:N \g__ft_version_int
+    \bool_gset_false:N \g__ft_legend_done_bool
     \setcounter{ftpart}{0}
   }
 \NewDocumentCommand \testheader { O{} }
@@ -649,11 +665,13 @@
     bonus .default:n  = true ,
     fixed  .code:n    = { } ,   % usate solo da exercises
     follow .code:n    = { } ,
+    motivation .tl_gset:N = \g__ft_ex_motiv_tl ,
   }
 
 \NewDocumentCommand \exercise { O{} }
   {
     \__ft_autoclose:
+    \tl_gclear:N \g__ft_ex_motiv_tl
     \tl_clear:N \l__ft_ex_title_tl
     \tl_clear:N \l__ft_ex_diff_tl
     \bool_set_false:N \l__ft_ex_bonus_bool
@@ -849,6 +867,7 @@
     noreduced .default:n  = true ,
     fixed     .code:n     = { } ,    % usate solo dal mescolamento
     follow    .code:n     = { } ,
+    motivation .tl_set:N  = \l__ft_it_motiv_tl ,
   }
 
 % impostazioni della lista interna
@@ -876,6 +895,21 @@
   {
     \dim_set:Nn \l_tmpa_dim { \linewidth + \rightmargin }
     \hbox_set:Nn \l_tmpa_box { \__ft_box:nn { } {#1} }
+    \dim_sub:Nn \l_tmpa_dim { \box_wd:N \l_tmpa_box }
+    \leavevmode
+    \hbox_overlap_right:n { \tex_kern:D \l_tmpa_dim \box_use:N \l_tmpa_box }
+    \ignorespaces
+  }
+
+% come sopra, con la casella M (motivazione) a sinistra del punteggio
+\cs_new_protected:Npn \__ft_put_score_m:n #1
+  {
+    \dim_set:Nn \l_tmpa_dim { \linewidth + \rightmargin }
+    \hbox_set:Nn \l_tmpa_box
+      {
+        \ft@mbox
+        \tl_if_empty:nF {#1} { \hspace{.4em} \__ft_box:nn { } {#1} }
+      }
     \dim_sub:Nn \l_tmpa_dim { \box_wd:N \l_tmpa_box }
     \leavevmode
     \hbox_overlap_right:n { \tex_kern:D \l_tmpa_dim \box_use:N \l_tmpa_box }
@@ -914,6 +948,7 @@
     \bool_set_false:N \l__ft_it_mark_bool
     \bool_set_false:N \l__ft_it_upper_bool
     \bool_set_false:N \l__ft_it_noreduced_bool
+    \tl_clear:N \l__ft_it_motiv_tl
     \keys_set:nn { fancytests / item } {#1}
   }
 
@@ -928,6 +963,7 @@
         \int_set:Nn \l__ft_skip_counter_int { \value{ftpart} }
         \bool_set_true:N \l__ft_skip_open_bool
         \setbox \ft@trashbox \vbox \bgroup \hsize = \linewidth
+        \legacy_if_set_false:n { @newlist }   % niente errore "missing \item"
       }
       {
         \__ft_close_cell:
@@ -944,13 +980,31 @@
         \bool_set_false:N \l__ft_parts_first_bool
         \stepcounter{ftpart}
         \item [ \__ft_label: ]
-        \tl_if_empty:NF \l__ft_it_pts_tl
+        \tl_if_empty:NF \l__ft_it_pts_tl { \fp_gadd:Nn \g__ft_ex_fp { \l__ft_it_pts_tl } }
+        % quiz a risposta multipla (noti dalla compilazione precedente)
+        \bool_set_false:N \l__ft_it_ismcq_bool
+        \prop_if_in:NxT \g__ft_mcq_isq_prop
+          { \int_use:N \g__ft_version_int - \int_use:N \g__ft_ex_int - \alph{ftpart} }
+          { \bool_if:NF \g__ft_ex_bonus_bool { \bool_set_true:N \l__ft_it_ismcq_bool } }
+        \str_case:VnF \g__ft_mcq_tl
           {
-            \fp_gadd:Nn \g__ft_ex_fp { \l__ft_it_pts_tl }
-            \__ft_put_score:n { \l__ft_it_pts_tl }
+            { band }
+              { % il punteggio dei quiz sta solo nella tabella delle risposte
+                \bool_if:NF \l__ft_it_ismcq_bool
+                  { \tl_if_empty:NF \l__ft_it_pts_tl { \__ft_put_score:n { \l__ft_it_pts_tl } } }
+              }
+            { margin }
+              {
+                \bool_if:NTF \l__ft_it_ismcq_bool
+                  { \__ft_put_score_m:n { \l__ft_it_pts_tl } }
+                  { \tl_if_empty:NF \l__ft_it_pts_tl { \__ft_put_score:n { \l__ft_it_pts_tl } } }
+              }
           }
+          { \tl_if_empty:NF \l__ft_it_pts_tl { \__ft_put_score:n { \l__ft_it_pts_tl } } }
       }
   }
+\bool_new:N \l__ft_it_ismcq_bool
+\cs_generate_variant:Nn \prop_if_in:NnT { Nx }
 
 \cs_new_protected:Npn \__ft_label:
   {
@@ -985,7 +1039,7 @@
       {
         \setlength \ft@cellw
           { \dim_eval:n { ( \linewidth - \ft@colgap * ( \l__ft_parts_cols_int - 1 ) )
-                          / \l__ft_parts_cols_int - 1pt } }
+                          / \l__ft_parts_cols_int - .05pt } }   % celle allineate al margine destro
         \par \addvspace { \dim_eval:n { \l__ft_parts_sep_dim / 2 + 2pt } }
         \lineskip = \dim_eval:n { \l__ft_parts_sep_dim + 2pt } \relax
         \lineskiplimit = 0pt \relax
@@ -1006,10 +1060,15 @@
         \bool_if:NF \l__ft_parts_first_bool { \endlist \end{minipage} \hss \egroup }
         \par \addvspace { \dim_eval:n { \l__ft_parts_sep_dim / 2 + 2pt } }
       }
-      { \endlist }
+      {
+        % elenco rimasto vuoto (tutti i quesiti omessi nella versione ridotta)
+        \bool_if:NT \l__ft_parts_first_bool { \cs_set_eq:NN \@noitemerr \scan_stop: }
+        \endlist
+      }
     % la scatola che contiene l'elenco occupa tutta la larghezza
     % (serve dentro le minipage, dove i punteggi stanno nel margine destro)
-    \par \nointerlineskip \hbox_to_wd:nn { \l__ft_parts_outer_dim } { }
+    \bool_if:NF \l__ft_parts_first_bool
+      { \par \nointerlineskip \hbox_to_wd:nn { \l__ft_parts_outer_dim } { } }
     \bool_gset_false:N \g__ft_inparts_bool
   }
 \NewDocumentCommand \__ft_itemx_cmd { O{} } { \__ft_itemx:n {#1} }
@@ -1024,7 +1083,7 @@
 %%    \choice[fixed] Nessuna delle precedenti     (resta in ultima posizione)
 %%    \correct[if={v=2}] giusta solo se \pick[v]{..} ha scelto la 2a variante
 %%  \end{choices}
-%%  Chiavi: cols, shuffle=true|false, indent=<dim>, labels=box|letters,
+%%  Chiavi: cols, shuffle=true|false, indent=<dim>, labels=box|letters|boxed,
 %%          before=<dim> (spazio sopra, 2pt), rowsep=<dim> (spazio extra tra
 %%          le righe, 0pt), after=<dim> (spazio sotto, .25em).
 %%  Le opzioni vengono mescolate (seme fisso: copie riproducibili) e la
@@ -1049,6 +1108,7 @@
     before  .dim_set:N  = \l__ft_ch_before_dim ,
     rowsep  .dim_set:N  = \l__ft_ch_rowsep_dim ,
     ragged  .code:n     = { } ,
+    motivation .tl_set:N = \l__ft_ch_motiv_tl ,
   }
 \keys_define:nn { fancytests / choice }
   {
@@ -1098,6 +1158,541 @@
       }
   }
 
+% --- tabella delle risposte ---------------------------------------------------
+%  \answergrid                         tabella a fascia (3 righe) di tutta la copia
+%  \answergrid[style=boxes]            griglia "lettera + caselle A B C D"
+%  Chiavi: style=band|boxes, exercise=all|<n>, cell=<dim> (larghezza colonna,
+%          band), frame=cells|rules|lines (band; predefinito \testsetup{grid-frame}),
+%          legend=true|false (band), cols=<n> (quesiti per riga, boxes),
+%          title={...} (boxes), choices=<n>, questions={a,b,...}, before, after.
+%  I quesiti a risposta multipla vengono registrati nel file .aux: se la
+%  tabella precede i quesiti serve una seconda compilazione (Overleaf la esegue).
+%
+%  \testsetup{mcq=band}    punteggio dei quiz solo nella tabella
+%  \testsetup{mcq=margin}  casella M accanto al punteggio di ogni quiz
+%  Segno M (motivazione), compilato dagli studenti:
+%     segno di spunta = motivata qui,  F = motivata su foglio a parte.
+%  \testsetup{motivation-mark=line|below|label}   aspetto del segno (below)
+%  \testsetup{grid-frame=cells|rules|lines}       bordi della tabella (rules)
+
+% segno M (motivazione): breve linea grigia, con tre varianti
+%   line  = solo la linea;  below = linea con una piccola M sotto (predefinita);
+%   label = piccola M grigia prima della linea
+\cs_new_protected:Npn \ft@mline
+  { \textcolor { black!40 } { \rule [ -.12em ] { 1.1em } { .5pt } } }
+\cs_new_protected:Npn \ft@mbox
+  {
+    \str_case:Vn \g__ft_mmark_tl
+      {
+        { line }  { \ft@mline }
+        { below }
+          {
+            \rlap { \hbox_to_wd:nn { 1.1em }
+              { \hss \smash { \raisebox { -.95em } { \textcolor { black!50 } { \tiny M } } } \hss } }
+            \ft@mline
+          }
+        { label } { \textcolor { black!50 } { \scriptsize M } \, \ft@mline }
+      }
+  }
+\cs_new_protected:Npn \ft@legendtext
+  {
+    \ft@mbox \,{:} ~ $\checkmark$ ~ motivata ~ qui
+    \enspace \textperiodcentered \enspace
+    F ~ motivata ~ su ~ foglio ~ a ~ parte
+  }
+
+% --- registrazione dei quiz -----------------------------------------------------
+%  voce = {esercizio}{quesito}{numero opzioni}{punti}{risposta corretta}
+\tl_new:N \l__ft_mcq_entry_tl
+\tl_new:N \l__ft_mcq_last_tl
+\prop_new:N \g__ft_mcq_isq_prop
+\cs_new:Npn \__ft_mcq_id:nnnnn #1#2#3#4#5 { #1 - #2 }
+\cs_generate_variant:Nn \seq_get_right:NNT { cNT }
+
+\cs_new_protected:Npn \__ft_mcq_store:nnn #1#2#3   % cur|aux, versione, voce
+  {
+    \seq_if_exist:cF { g__ft_mcq_ #1 _ #2 _seq } { \seq_new:c { g__ft_mcq_ #1 _ #2 _seq } }
+    % la stessa domanda ripetuta (tabularx compone piu' volte): sostituisci
+    \seq_get_right:cNT { g__ft_mcq_ #1 _ #2 _seq } \l__ft_mcq_last_tl
+      {
+        \tl_set:Nx \l_tmpa_tl { \exp_last_unbraced:NV \__ft_mcq_id:nnnnn \l__ft_mcq_last_tl }
+        \tl_set:Nx \l_tmpb_tl { \__ft_mcq_id:nnnnn #3 }
+        \tl_if_eq:NNT \l_tmpa_tl \l_tmpb_tl
+          { \seq_gpop_right:cN { g__ft_mcq_ #1 _ #2 _seq } \l_tmpa_tl }
+      }
+    \seq_gput_right:cn { g__ft_mcq_ #1 _ #2 _seq } {#3}
+  }
+\cs_generate_variant:Nn \__ft_mcq_store:nnn { nxV }
+
+\cs_new_protected:Npn \__ft_mcq_record:
+  {
+    \bool_if:NT \g__ft_inparts_bool
+      {
+        \tl_set:Nx \l__ft_mcq_entry_tl
+          {
+            { \int_use:N \g__ft_ex_int } { \alph{ftpart} } { \int_use:N \l__ft_ch_n_int }
+            { \l__ft_it_pts_tl } { \l__ft_ch_key_tl }
+          }
+        \__ft_mcq_store:nxV { cur } { \int_use:N \g__ft_version_int } \l__ft_mcq_entry_tl
+        \iow_now:Nx \@auxout
+          {
+            \token_to_str:N \ftmcq { \int_use:N \g__ft_version_int }
+            \exp_not:V \l__ft_mcq_entry_tl
+          }
+      }
+  }
+% lettura dal file .aux
+\NewDocumentCommand \ftmcq { m m m m m m }
+  {
+    \__ft_mcq_store:nnn { aux } {#1} { {#2} {#3} {#4} {#5} {#6} }
+    \prop_gput:Nnn \g__ft_mcq_isq_prop { #1 - #2 - #3 } { }
+  }
+
+% voci da mostrare: compilazione corrente se completa, altrimenti .aux
+\seq_new:N \l__ft_grid_seq
+\cs_new_protected:Npn \__ft_mcq_select:n #1     % all | numero esercizio
+  {
+    \seq_clear:N \l__ft_grid_seq
+    \tl_set:Nx \l_tmpa_tl { \int_use:N \g__ft_version_int }
+    \int_zero:N \l_tmpa_int
+    \int_zero:N \l_tmpb_int
+    \seq_if_exist:cT { g__ft_mcq_cur_ \l_tmpa_tl _seq }
+      { \int_set:Nn \l_tmpa_int { \seq_count:c { g__ft_mcq_cur_ \l_tmpa_tl _seq } } }
+    \seq_if_exist:cT { g__ft_mcq_aux_ \l_tmpa_tl _seq }
+      { \int_set:Nn \l_tmpb_int { \seq_count:c { g__ft_mcq_aux_ \l_tmpa_tl _seq } } }
+    \tl_set:Nx \l_tmpb_tl
+      { \int_compare:nNnTF \l_tmpa_int < \l_tmpb_int { aux } { cur } }
+    \seq_if_exist:cT { g__ft_mcq_ \l_tmpb_tl _ \l_tmpa_tl _seq }
+      {
+        \seq_map_inline:cn { g__ft_mcq_ \l_tmpb_tl _ \l_tmpa_tl _seq }
+          {
+            \str_if_eq:nnTF {#1} { all }
+              { \seq_put_right:Nn \l__ft_grid_seq {##1} }
+              {
+                \str_if_eq:eeT { \use_i:nnnnn ##1 } {#1}
+                  { \seq_put_right:Nn \l__ft_grid_seq {##1} }
+              }
+          }
+      }
+  }
+
+% --- chiavi ----------------------------------------------------------------------
+\keys_define:nn { fancytests / grid }
+  {
+    style     .choices:nn = { band , boxes }
+                { \tl_set_eq:NN \l__ft_grid_style_tl \l_keys_choice_tl } ,
+    cols      .int_set:N   = \l__ft_grid_cols_int ,
+    exercise  .tl_set:N    = \l__ft_grid_ex_tl ,
+    questions .clist_set:N = \l__ft_grid_q_clist ,
+    choices   .int_set:N   = \l__ft_grid_n_int ,
+    title     .tl_set:N    = \l__ft_grid_title_tl ,
+    before    .dim_set:N   = \l__ft_grid_before_dim ,
+    after     .dim_set:N   = \l__ft_grid_after_dim ,
+    cell      .dim_set:N   = \l__ft_grid_cell_dim ,
+    legend    .bool_set:N  = \l__ft_grid_legend_bool ,
+    legend    .default:n   = true ,
+    frame     .choices:nn  = { cells , rules , lines }
+                { \tl_set_eq:NN \l__ft_grid_frame_tl \l_keys_choice_tl } ,
+  }
+\tl_new:N \l__ft_grid_frame_tl
+\tl_new:N  \l__ft_grid_style_tl
+\int_new:N \l__ft_grid_k_int
+\tl_new:N  \l__ft_grid_body_tl
+\dim_new:N \l__ft_band_labw_dim
+\dim_new:N \l__ft_band_colw_dim
+\int_new:N \l__ft_band_per_int
+\int_new:N \l__ft_band_chunk_int
+\fp_new:N  \l__ft_band_total_fp
+\bool_new:N \l__ft_band_haspts_bool
+\tl_new:N  \l__ft_band_head_tl
+\tl_new:N  \l__ft_band_ans_tl
+\tl_new:N  \l__ft_band_pts_tl
+\tl_new:N  \l__ft_band_strip_tl
+\seq_new:N \g__ft_strips_seq
+
+\NewDocumentCommand \answergrid { O{} }
+  {
+    \group_begin:
+    \tl_set:Nn \l__ft_grid_style_tl { band }
+    \int_set:Nn \l__ft_grid_cols_int { 4 }
+    \tl_clear:N \l__ft_grid_ex_tl
+    \clist_clear:N \l__ft_grid_q_clist
+    \int_zero:N \l__ft_grid_n_int
+    \tl_set:Nn \l__ft_grid_title_tl { Risposte: }
+    \dim_set:Nn \l__ft_grid_before_dim { .6em }
+    \dim_set:Nn \l__ft_grid_after_dim { .6em }
+    \dim_set:Nn \l__ft_grid_cell_dim { 1.45cm }
+    \bool_set_true:N \l__ft_grid_legend_bool
+    \tl_set_eq:NN \l__ft_grid_frame_tl \g__ft_gridframe_tl
+    \keys_set:nn { fancytests / grid } {#1}
+    \tl_if_empty:NT \l__ft_grid_ex_tl
+      {
+        \str_if_eq:VnTF \l__ft_grid_style_tl { band }
+          { \tl_set:Nn \l__ft_grid_ex_tl { all } }
+          { \tl_set:Nx \l__ft_grid_ex_tl { \int_use:N \g__ft_ex_int } }
+      }
+    \__ft_mcq_select:V \l__ft_grid_ex_tl
+    % elenco esplicito di quesiti (compatibilita')
+    \clist_if_empty:NF \l__ft_grid_q_clist
+      {
+        \seq_clear:N \l__ft_grid_seq
+        \clist_map_inline:Nn \l__ft_grid_q_clist
+          {
+            \seq_put_right:Nx \l__ft_grid_seq
+              { { \l__ft_grid_ex_tl } {##1} { \int_eval:n { \int_max:nn { \l__ft_grid_n_int } { 1 } } } { } { } }
+          }
+      }
+    \par \vspace { \l__ft_grid_before_dim } \noindent
+    \seq_if_empty:NTF \l__ft_grid_seq
+      { \fbox { \footnotesize \ttfamily tabella~delle~risposte:~ricompilare } }
+      {
+        \str_if_eq:VnTF \l__ft_grid_style_tl { band }
+          { \__ft_band: }
+          { \__ft_boxes: }
+      }
+    \par \vspace { \l__ft_grid_after_dim }
+    \group_end:
+  }
+\cs_generate_variant:Nn \__ft_mcq_select:n { V }
+
+% --- stile band: etichette / risposta (con casella M) / punti --------------------
+\cs_new:Npn \__ft_band_label:nnnnn #1#2#3#4#5   % voce: esercizio, quesito, ...
+  { \str_if_eq:VnTF \l__ft_grid_ex_tl { all } { #1 #2 } { #2 } }
+
+\dim_new:N \l__ft_band_markw_dim
+\cs_new_protected:Npn \__ft_band_letter:n #1
+  { \legacy_if:nT { ft@answers } { \textcolor{SubjectColor} { \normalsize \bfseries #1 } } }
+\cs_new_protected:Npn \__ft_band_anscell:n #1   % #1 lettera corretta
+  {
+    \str_if_eq:VnTF \l__ft_grid_frame_tl { lines }
+      {
+        % riga di scrittura con il segno M alla fine
+        \dim_set:Nn \l_tmpa_dim { \l__ft_grid_cell_dim - \l__ft_band_markw_dim - .5em }
+        \makebox [ \l__ft_grid_cell_dim ] [l]
+          {
+            \rule [ -.4em ] { 0pt } { 2.1em } \hspace { .1em }
+            \raisebox { .25em }
+              {
+                \rlap { \rule [ -.2em ] { \l_tmpa_dim } { .4pt } }
+                \makebox [ \l_tmpa_dim ] [c] { \__ft_band_letter:n {#1} }
+                \hspace { .3em } \ft@mbox
+              }
+          }
+      }
+      {
+        % lettera centrata nello spazio a sinistra del segno M
+        \dim_set:Nn \l_tmpa_dim
+          { \l__ft_grid_cell_dim - \l__ft_band_markw_dim - .25em }
+        \makebox [ \l__ft_grid_cell_dim ] [l]
+          {
+            \rule [ -.4em ] { 0pt } { 2.1em }
+            \makebox [ \l_tmpa_dim ] [c] { \__ft_band_letter:n {#1} }
+          }
+        \llap
+          {
+            \raisebox { \str_if_eq:VnTF \g__ft_mmark_tl { below } { .72em } { .12em } } { \ft@mbox }
+            \hspace { .25em }
+          }
+      }
+  }
+\cs_new_protected:Npn \__ft_band_ptscell:n #1
+  {
+    \makebox [ \l__ft_grid_cell_dim ] [c]
+      { \rule [ -.35em ] { 0pt } { 1.45em } \tl_if_blank:nF {#1} { \__ft_box:nn { short } {#1} } }
+  }
+\cs_new_protected:Npn \__ft_band_totcell:n #1
+  {
+    \group_begin:
+    \setlength \fboxsep { 0pt }
+    \setlength \fboxrule { .4pt }
+    \fbox { \__ft_band_ptscell:n {#1} }
+    \group_end:
+  }
+\cs_new_protected:Npn \__ft_band_rowlabel:n #1
+  { \makebox [ \l__ft_band_labw_dim ] [r] { #1 } }
+
+% una riga di tabella con le colonne raccolte
+\cs_new_protected:Npn \__ft_band_flush:nn #1#2   % #1 numero colonne, #2 ultima? (true/false)
+  {
+    % cells: celle bordate; rules: solo linee orizzontali; lines: righe di scrittura
+    \tl_set:Nx \l_tmpa_tl
+      {
+        \exp_not:n { @{} l @{\hspace{.45em}} }
+        \str_if_eq:VnTF \l__ft_grid_frame_tl { cells }
+          { | \prg_replicate:nn {#1} { \exp_not:n { c | } } }
+          { \prg_replicate:nn {#1} { c } }
+        \exp_not:n { @{} }
+      }
+    \tl_set:Nx \l_tmpb_tl
+      {
+        \str_if_eq:VnF \l__ft_grid_frame_tl { lines }
+          { \exp_not:N \cline { 2 - \int_eval:n { #1 + 1 } } }
+      }
+    \use:x
+      {
+        \exp_not:N \begin{tabular} [b] { \exp_not:V \l_tmpa_tl }
+          \exp_not:V \l__ft_band_head_tl \exp_not:N \\ \exp_not:V \l_tmpb_tl
+          \exp_not:V \l__ft_band_ans_tl  \exp_not:N \\ \exp_not:V \l_tmpb_tl
+          \exp_not:V \l__ft_band_pts_tl
+        \exp_not:N \end{tabular}
+      }
+    % totale, allineato alla riga dei punti
+    \bool_lazy_and:nnT { \str_if_eq_p:nn {#2} { true } } { \l__ft_band_haspts_bool }
+      {
+        \hspace { 1.2em }
+        \begin{tabular} [b] { @{} c @{} }
+          \scriptsize \bfseries Tot \\
+          \rule [ -.4em ] { 0pt } { 2.1em } \\
+          \__ft_band_ptscell:n { \fp_to_decimal:N \l__ft_band_total_fp }
+        \end{tabular}
+      }
+    % striscia di correzione (solo copia docente)
+    \legacy_if:nT { ft@answers }
+      {
+        \tl_set:Nx \l__ft_band_strip_tl
+          {
+            \exp_not:N \begin{tabular} [b] { \exp_not:V \l_tmpa_tl }
+              \exp_not:V \l__ft_band_head_tl \exp_not:N \\ \exp_not:V \l_tmpb_tl
+              \exp_not:V \l__ft_band_strip_row_tl \exp_not:N \\ \exp_not:V \l_tmpb_tl
+            \exp_not:N \end{tabular}
+          }
+        \tl_put_right:Nx \l__ft_band_stripall_tl
+          {
+            \tl_if_empty:NF \l__ft_band_stripall_tl { \exp_not:N \par \exp_not:N \vspace { .35em } \exp_not:N \noindent }
+            \exp_not:V \l__ft_band_strip_tl
+          }
+        \str_if_eq:nnT {#2} { true }
+          {
+            \seq_gput_right:Nx \g__ft_strips_seq
+              {
+                {
+                  \exp_not:N \tabcolsep = 2pt \exp_not:N \relax \exp_not:N \footnotesize
+                  \exp_not:V \l__ft_band_stripall_tl
+                }
+              }
+          }
+      }
+  }
+\tl_new:N \l__ft_band_strip_row_tl
+\tl_new:N \l__ft_band_stripall_tl
+
+\cs_new_protected:Npn \__ft_band:
+  {
+    \footnotesize
+    \tabcolsep = 2pt \relax
+    \renewcommand { \arraystretch } { 1 }
+    % larghezza della colonna delle etichette (uguale nella striscia)
+    \hbox_set:Nn \l_tmpa_box { \footnotesize Risposta }
+    \dim_set:Nn \l__ft_band_labw_dim { \box_wd:N \l_tmpa_box }
+    \hbox_set:Nn \l_tmpa_box { \footnotesize Copia~\#00 }
+    \dim_set:Nn \l__ft_band_labw_dim { \dim_max:nn { \l__ft_band_labw_dim } { \box_wd:N \l_tmpa_box } }
+    \hbox_set:Nn \l_tmpa_box { \ft@mbox }
+    \dim_set:Nn \l__ft_band_markw_dim { \box_wd:N \l_tmpa_box }
+    % punteggio totale
+    \fp_zero:N \l__ft_band_total_fp
+    \bool_set_false:N \l__ft_band_haspts_bool
+    \seq_map_inline:Nn \l__ft_grid_seq
+      {
+        \tl_set:Nx \l_tmpa_tl { \use_iv:nnnnn ##1 }
+        \tl_if_blank:VF \l_tmpa_tl
+          {
+            \bool_set_true:N \l__ft_band_haspts_bool
+            \fp_add:Nn \l__ft_band_total_fp { \use_iv:nnnnn ##1 }
+          }
+      }
+    % colonne per riga
+    \dim_set:Nn \l__ft_band_colw_dim { \l__ft_grid_cell_dim + 2 \tabcolsep + .4pt }
+    \int_set:Nn \l__ft_band_per_int
+      {
+        \fp_eval:n
+          {
+            floor (
+              ( \dim_to_fp:n { \linewidth - \l__ft_band_labw_dim - .45em - .4pt
+                               - \l__ft_band_colw_dim - .9em } )
+              / \dim_to_fp:n { \l__ft_band_colw_dim } )
+          }
+      }
+    \int_compare:nNnT \l__ft_band_per_int < 1 { \int_set:Nn \l__ft_band_per_int { 1 } }
+    % righe della fascia
+    \int_zero:N \l__ft_grid_k_int
+    \int_zero:N \l__ft_band_chunk_int
+    \__ft_band_reset:
+    \seq_map_inline:Nn \l__ft_grid_seq
+      {
+        \int_incr:N \l__ft_grid_k_int
+        \int_incr:N \l__ft_band_chunk_int
+        \tl_put_right:Nx \l__ft_band_head_tl
+          {
+            & \exp_not:N \multicolumn {1} {c}
+              { \exp_not:N \scriptsize \exp_not:N \bfseries \__ft_band_label:nnnnn ##1 }
+          }
+        \tl_put_right:Nx \l__ft_band_ans_tl
+          { & \exp_not:N \__ft_band_anscell:n { \use_v:nnnnn ##1 } }
+        \tl_put_right:Nx \l__ft_band_pts_tl
+          {
+            & \exp_not:N \multicolumn {1} {c}
+              { \exp_not:N \__ft_band_ptscell:n { \use_iv:nnnnn ##1 } }
+          }
+        \tl_put_right:Nx \l__ft_band_strip_row_tl
+          {
+            & \exp_not:N \makebox [ \dim_use:N \l__ft_grid_cell_dim ] [c]
+              {
+                \exp_not:N \rule [ -.4em ] { 0pt } { 2.1em }
+                \exp_not:N \textcolor { SubjectColor }
+                  { \exp_not:N \normalsize \exp_not:N \bfseries \use_v:nnnnn ##1 }
+              }
+          }
+        \bool_if:nT
+          {
+            \int_compare_p:nNn \l__ft_band_chunk_int = \l__ft_band_per_int
+            && \int_compare_p:nNn \l__ft_grid_k_int < { \seq_count:N \l__ft_grid_seq }
+          }
+          {
+            \__ft_band_flush:nn { \l__ft_band_chunk_int } { false }
+            \par \vspace { .35em } \noindent
+            \int_zero:N \l__ft_band_chunk_int
+            \__ft_band_reset:
+          }
+      }
+    \__ft_band_flush:nn { \l__ft_band_chunk_int } { true }
+    \bool_if:NT \l__ft_grid_legend_bool
+      {
+        \par \vspace { .15em } \noindent
+        { \scriptsize \color { black!55 } \ft@legendtext }
+      }
+  }
+\cs_new_protected:Npn \__ft_band_reset:
+  {
+    \tl_set:Nx \l__ft_band_head_tl
+      { \exp_not:N \multicolumn {1} {l} { \exp_not:N \makebox [ \dim_use:N \l__ft_band_labw_dim ] { } } }
+    \tl_set:Nn \l__ft_band_ans_tl { \__ft_band_rowlabel:n { Risposta } }
+    \tl_set:Nn \l__ft_band_pts_tl
+      { \multicolumn {1} { @{} l @{\hspace{.45em}} } { \__ft_band_rowlabel:n { Punti } } }
+    \tl_set:Nx \l__ft_band_strip_row_tl
+      {
+        \exp_not:N \makebox [ \dim_use:N \l__ft_band_labw_dim ] [r]
+          { \int_compare:nNnTF \l__ft_grid_k_int = 0 { Copia~\exp_not:N \# \int_use:N \g__ft_version_int } { } }
+      }
+  }
+
+% pagina finale con le strisce di correzione (copia docente)
+\AddToHook { enddocument }
+  {
+    \seq_if_empty:NF \g__ft_strips_seq
+      {
+        \clearpage
+        \group_begin:
+        \pagestyle{plain}
+        \noindent { \large \bfseries Strisce ~ di ~ correzione } \par
+        \vspace { .3em } \noindent
+        { \footnotesize Ritaglia ~ la ~ striscia ~ della ~ copia ~ e ~ appoggiala ~ sotto ~
+          la ~ riga ~ delle ~ risposte ~ dello ~ studente. } \par
+        \vspace { 1em }
+        \seq_map_inline:Nn \g__ft_strips_seq
+          {
+            \noindent #1 \par
+            \vspace { .4em } \noindent
+            { \color { black!35 } \leaders \hbox to 6pt { \hss \rule[.5ex]{3pt}{.3pt} \hss } \hfill \kern0pt } \par
+            \vspace { .6em }
+          }
+        \group_end:
+      }
+  }
+
+% --- stile boxes: "a.  A□ B□ C□ D□" ----------------------------------------------
+\cs_new_protected:Npn \__ft_boxes:
+  {
+    \tl_clear:N \l__ft_grid_body_tl
+    \int_zero:N \l__ft_grid_k_int
+    \seq_map_inline:Nn \l__ft_grid_seq
+      {
+        \int_compare:nNnT
+          { \int_mod:nn { \l__ft_grid_k_int } { \l__ft_grid_cols_int } } = 0
+          {
+            \int_compare:nNnTF \l__ft_grid_k_int = 0
+              { \tl_put_right:Nn \l__ft_grid_body_tl { \small \bfseries \l__ft_grid_title_tl } }
+              { \tl_put_right:Nn \l__ft_grid_body_tl { \\[.35em] } }
+          }
+        \tl_put_right:Nx \l__ft_grid_body_tl
+          { & \exp_not:N \textbf { \__ft_band_label:nnnnn ##1 . } \exp_not:N \hspace{.4em} }
+        \int_step_inline:nn
+          {
+            \int_compare:nNnTF \l__ft_grid_n_int > 0
+              { \l__ft_grid_n_int } { \use_iii:nnnnn ##1 }
+          }
+          {
+            \str_if_eq:VnTF \ft@labels { boxed }
+              {
+                \tl_put_right:Nx \l__ft_grid_body_tl
+                  { \exp_not:N \hspace{.3em} \exp_not:N \letterbox { \int_to_Alph:n {####1} } }
+              }
+              {
+                \tl_put_right:Nx \l__ft_grid_body_tl
+                  {
+                    \exp_not:N \hspace{.35em} { \exp_not:N \footnotesize \int_to_Alph:n {####1} }
+                    \exp_not:N \, \exp_not:N \ensuremath { \exp_not:N \square }
+                  }
+              }
+          }
+        \int_incr:N \l__ft_grid_k_int
+      }
+    \hspace*{\itmindent}
+    \use:x
+      {
+        \exp_not:N \begin{tabular}[t]
+          {
+            \exp_not:n { @{} l @{\hspace{1em}} }
+            * { \int_use:N \l__ft_grid_cols_int } { \exp_not:n { l @{\hspace{2em}} } }
+            \exp_not:n { @{} }
+          }
+        \exp_not:V \l__ft_grid_body_tl
+        \exp_not:N \end{tabular}
+      }
+  }
+
+% --- spazio per la motivazione e legenda (dopo le opzioni) -----------------------
+\cs_new_protected:Npn \__ft_motivation_space:
+  {
+    \tl_set:Nx \l_tmpa_tl
+      {
+        \tl_if_empty:NTF \l__ft_ch_motiv_tl
+          {
+            \tl_if_empty:NTF \l__ft_it_motiv_tl
+              {
+                \tl_if_empty:NTF \g__ft_ex_motiv_tl
+                  { \g__ft_motiv_tl } { \g__ft_ex_motiv_tl }
+              }
+              { \l__ft_it_motiv_tl }
+          }
+          { \l__ft_ch_motiv_tl }
+      }
+    \fp_compare:nNnT { \l_tmpa_tl } > { 0 }
+      {
+        \str_if_eq:VnTF \g__ft_motivstyle_tl { grid }
+          {
+            \dim_set:Nn \l_tmpa_dim
+              { \fp_to_dim:n { ceil ( \l_tmpa_tl * \dim_to_fp:n { \baselineskip } / \dim_to_fp:n { 5mm } ) * \dim_to_fp:n { 5mm } } }
+            \dim_set:Nn \l_tmpb_dim
+              { \fp_to_dim:n { floor ( \dim_to_fp:n { \linewidth - \l__ft_ch_indent_dim } / \dim_to_fp:n { 5mm } ) * \dim_to_fp:n { 5mm } } }
+            \noindent \hspace* { \l__ft_ch_indent_dim }
+            \tikz \draw [ step = 5mm , black!14 , very~thin ] (0,0) grid ( \dim_use:N \l_tmpb_dim , \dim_use:N \l_tmpa_dim ) ;
+            \par \vspace { .25em }
+          }
+          { \vspace { \fp_to_dim:n { \l_tmpa_tl * \dim_to_fp:n { \baselineskip } } } }
+      }
+  }
+
+\cs_new_protected:Npn \__ft_margin_legend:
+  {
+    \bool_lazy_and:nnT
+      { \str_if_eq_p:Vn \g__ft_mcq_tl { margin } }
+      { ! \g__ft_legend_done_bool }
+      {
+        \bool_gset_true:N \g__ft_legend_done_bool
+        \nobreak \noindent \hfill { \scriptsize \color { black!55 } \ft@legendtext } \par
+      }
+  }
+
 % "[opzioni] testo" -> opzioni, testo
 \cs_new_protected:Npn \__ft_parse_opt:w [ #1 ] #2 \q_stop
   {
@@ -1118,13 +1713,39 @@
   }
 \msg_new:nnn { fancytests } { unknown-pick } { \pick[#1]{...}~non~definito. }
 
+% lettera dentro una casella quadrata (labels=boxed); #2 = evidenziata
+\cs_new_protected:Npn \__ft_lbox:nn #1#2
+  {
+    \bool_if:nTF {#2}
+      {
+        \tikz[baseline=(ftlb.base)]
+          \node[draw=SubjectColor, fill=SubjectColor!20, line~width=.6pt, inner~sep=0pt,
+                minimum~size=1.15em, font=\footnotesize\bfseries, text=SubjectColor]
+            (ftlb) {\strut #1};
+      }
+      {
+        \tikz[baseline=(ftlb.base)]
+          \node[draw, line~width=.5pt, inner~sep=0pt, minimum~size=1.15em,
+                font=\footnotesize\bfseries] (ftlb) {\strut #1};
+      }
+  }
+\NewDocumentCommand \letterbox { m } { \__ft_lbox:nn {#1} { \c_false_bool } }
+
 \cs_new_protected:Npn \__ft_marker:nn #1#2  % #1 indice (1..n), #2 corretta?
   {
-    \str_if_eq:VnTF \l__ft_ch_labels_tl { letters }
+    \str_case:VnF \l__ft_ch_labels_tl
       {
-        \bool_lazy_and:nnTF { #2 } { \legacy_if_p:n { ft@answers } }
-          { \textcolor{SubjectColor}{ \textbf { \int_to_Alph:n {#1} ) } } }
-          { \textbf { \int_to_Alph:n {#1} ) } }
+        { letters }
+          {
+            \bool_lazy_and:nnTF { #2 } { \legacy_if_p:n { ft@answers } }
+              { \textcolor{SubjectColor}{ \textbf { \int_to_Alph:n {#1} ) } } }
+              { \textbf { \int_to_Alph:n {#1} ) } }
+          }
+        { boxed }
+          {
+            \__ft_lbox:nn { \int_to_Alph:n {#1} }
+              { \bool_lazy_and_p:nn { #2 } { \legacy_if_p:n { ft@answers } } }
+          }
       }
       {
         \bool_lazy_and:nnTF { #2 } { \legacy_if_p:n { ft@answers } }
@@ -1132,6 +1753,7 @@
           { $\square$ }
       }
   }
+
 
 \cs_new_protected:Npn \__ft_choices:nn #1#2
   {
@@ -1145,6 +1767,7 @@
     \dim_set:Nn \l__ft_ch_after_dim { .25em }
     \dim_set:Nn \l__ft_ch_before_dim { 2pt }
     \dim_zero:N \l__ft_ch_rowsep_dim
+    \tl_clear:N \l__ft_ch_motiv_tl
     \keys_set:nn { fancytests / choices } {#1}
     % --- 1. separa le opzioni ------------------------------------------------
     \tl_set:Nn \l__ft_ch_body_tl {#2}
@@ -1205,7 +1828,12 @@
         \str_if_eq:eeT { \seq_item:Nn \l__ft_ch_correct_seq {##1} } { true }
           { \tl_put_right:Nx \l__ft_ch_key_tl { \int_to_Alph:n { \l__ft_ch_k_int } } }
       }
-    \tl_if_empty:NF \l__ft_ch_key_tl { \__ft_key_write:n { \l__ft_ch_key_tl } }
+    % i quiz omessi nella versione ridotta non entrano nella chiave
+    \bool_if:NF \l__ft_skip_open_bool
+      {
+        \tl_if_empty:NF \l__ft_ch_key_tl { \__ft_key_write:n { \l__ft_ch_key_tl } }
+        \bool_if:NF \g__ft_ex_bonus_bool { \__ft_mcq_record: }
+      }
     % --- 4. misure e numero di colonne ---------------------------------------
     \hbox_set:Nn \l__ft_ch_tmp_box { \__ft_marker:nn { 1 } { \c_false_bool } \hspace{.75em} }
     \dim_set:Nn \l__ft_ch_mark_dim { \box_wd:N \l__ft_ch_tmp_box }
@@ -1287,7 +1915,11 @@
       }
     \bool_if:NTF \l__ft_ch_openend_bool
       { \vspace { \l__ft_ch_after_dim } }    % resta in modo orizzontale (celle di tabella)
-      { \par \vspace { \l__ft_ch_after_dim } }
+      {
+        \par \vspace { \l__ft_ch_after_dim }
+        \__ft_motivation_space:
+        \__ft_margin_legend:
+      }
     \group_end:
   }
 \bool_new:N \l__ft_ch_openend_bool

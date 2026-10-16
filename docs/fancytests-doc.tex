@@ -30,7 +30,7 @@
   listing above text, sharp corners, boxrule=.5pt,
   segmentation style={black!20, solid},
   listing options={style=ftcode},
-  before upper={\ResetAllScores\testsetup{subject=math}},
+  before upper={\ResetAllScores\testsetup{subject=math}\ftDocNewCopy},
   title={\small Example}, coltitle=black!70, colbacktitle=black!4,
   fonttitle=\bfseries}
 % code only
@@ -67,6 +67,15 @@
   \colorbox{FriendlyYellow!18}{\parbox{\dimexpr\linewidth-2\fboxsep}{\small\textbf{Note.} #1}}%
   \par\smallskip}
 
+% every example is a separate copy (its own answer table)
+\ExplSyntaxOn
+\NewDocumentCommand \ftDocNewCopy { } { \int_gincr:N \g__ft_version_int }
+\ExplSyntaxOff
+\makeatletter
+\newcommand*{\ftmbox}{\ft@mbox}
+\newcommand*{\ftmline}{\ft@mline}
+\makeatother
+
 % the test header switches the page style off: keep page numbers in the manual
 \NewCommandCopy\ftOrigTestheader\testheader
 \RenewDocumentCommand\testheader{O{}}{\ftOrigTestheader[#1]\pagestyle{plain}}
@@ -79,7 +88,7 @@
   \Large\mdseries Maths and physics tests in \LaTeX}
 \author{Matteo Bramardi\\[.2em]
   \normalsize co-authored with Claude (Anthropic)}
-\date{Version 1.0 --- October 2026}
+\date{Version 1.1.0 --- October 2026}
 
 \begin{document}
 \pagestyle{plain}
@@ -272,7 +281,20 @@ preamble it sets the defaults of the document; the same keys can be given to
 \key{answers} & off & Same as the package option, but can be switched on and
   off inside the document.\\
 \key{labels} & \opt{box} & Labels of multiple-choice options: \opt{box}
-  ($\square$) or \opt{letters} (A, B, C, \ldots).\\
+  ($\square$), \opt{letters} (A, B, C, \ldots) or \opt{boxed} (letters in
+  small boxes).\\
+\key{mcq} & \opt{none} & Where multiple-choice questions are graded:
+  \opt{none}, \opt{band} (answer table) or \opt{margin}
+  (section~\ref{sec:answertable}).\\
+\key{motivation} & \opt{0} & Space for the motivation after the options, in
+  lines (\opt{0} = none).\\
+\key{motivation-style} & \opt{blank} & \opt{blank} (empty space) or \opt{grid}
+  (light grey squares).\\
+\key{motivation-mark} & \opt{below} & Look of the motivation mark:
+  \opt{line}, \opt{below} (line with a tiny M underneath) or \opt{label}
+  (tiny M before the line).\\
+\key{grid-frame} & \opt{rules} & Frame of the answer table: \opt{cells},
+  \opt{rules} or \opt{lines} (section~\ref{sec:answertable}).\\
 \key{shuffle} & \opt{true} & Shuffle multiple-choice options.\\
 \key{shuffleparts} & \opt{false} & Shuffle the questions of every \env{parts}.\\
 \key{seed} & \opt{1} & Restart the random generator from this seed.\\
@@ -449,7 +471,9 @@ of the minipage.
 Mark with \key{noreduced} the questions to leave out of the reduced (DSA)
 version, and compile with \cs{testsetup}\verb|{reduced}|. The omitted
 questions disappear, the following letters move up and their points are not
-counted. Full and reduced versions come from the same file.
+counted. Full and reduced versions come from the same file. Omitted questions do not
+appear in the answer key nor in the answer table; a \env{parts} whose
+questions are all omitted prints nothing.
 
 \begin{example}
 \testsetup{reduced}
@@ -552,7 +576,8 @@ one. Long options wrap with a hanging indent.
 \key{cols} & \opt{auto} & \opt{auto}, or a fixed number of columns.\\
 \key{shuffle} & \opt{true} & Shuffle the options (global default in
   \cs{testsetup}).\\
-\key{labels} & \opt{box} & \opt{box} or \opt{letters}.\\
+\key{labels} & \opt{box} & \opt{box}, \opt{letters} or \opt{boxed}.\\
+\key{motivation} & --- & Motivation space for this question, in lines.\\
 \key{indent} & \opt{0pt} & Left indent (\cs{itmindent} outside \env{parts}).\\
 \key{before} & \opt{2pt} & Space above the options.\\
 \key{rowsep} & \opt{0pt} & Extra space between rows of options.\\
@@ -603,6 +628,122 @@ Roma è la capitale dal 1871.
 \end{solution}
 \testsetup{answers=false, labels=box}
 \end{example}
+
+\subsection{Answer table and motivations}\label{sec:answertable}
+
+When grading by hand, the answers, the students' motivations and the points
+should be in one place. A correct answer gets full points; the motivation is
+read only when the answer is wrong. Students mark each question on a short
+grey line \ftmline{} (the \emph{motivation mark}) with a tick ($\checkmark$) if they motivated the answer on the
+test, or with \textbf{F} if the motivation is on a separate sheet (\emph{foglio
+a parte}). The library offers two layouts, chosen with \key{mcq}.
+The mark has three looks, chosen with \cs{testsetup}\verb|{motivation-mark=...}|:
+\opt{line} \testsetup{motivation-mark=line}\ftmbox, \opt{below}
+\testsetup{motivation-mark=below}\ftmbox{} (default) and \opt{label}
+\testsetup{motivation-mark=label}\ftmbox\testsetup{motivation-mark=below}.
+
+\paragraph{The answer table (\opt{mcq=band}).} \cs{answergrid} prints a
+compact band of three rows: question labels, a cell for the answer letter
+with the motivation mark in its corner, and the score box, with the total at
+the end. Students tick the option next to the question and copy its letter
+into the table; you grade along one line and leave it only for wrong answers
+marked as motivated. With \opt{mcq=band} the multiple-choice questions lose
+their score box next to the question: their points are in the table only
+(open questions keep theirs). The table lists every multiple-choice question
+of the copy, in printed order, so it follows shuffling and reduced versions.
+
+\begin{example}
+\testsetup{mcq=band}
+\exercise Rispondi. Una risposta errata viene valutata solo se motivata.
+\begin{parts}
+  \itemx[pts=1] Quale funzione è sempre crescente?
+    \begin{choices}\correct $e^x$ \choice $e^{-x}$ \choice $-\ln x$\end{choices}
+  \itemx[pts=0.5] $\log_2 8$ vale
+    \begin{choices}\correct 3 \choice 4 \choice 8 \choice 16\end{choices}
+  \itemx[pts=2] Domanda aperta: dimostra che $\log_a b \cdot \log_b a = 1$.
+\end{parts}
+\answergrid
+\testsetup{mcq=none}
+\end{example}
+
+The frame of the table is chosen with \cs{testsetup}\verb|{grid-frame=...}| or
+\cs{answergrid}\verb|[frame=...]|: \opt{rules} (default, above) draws only the
+horizontal rules around the answers; \opt{cells} frames each answer cell;
+\opt{lines} draws no rules and gives each answer a writing line.
+
+\begin{example}
+\testsetup{mcq=band}
+\exercise Rispondi.
+\begin{parts}
+  \itemx[pts=1] $\log_2 8$ vale
+    \begin{choices}\correct 3 \choice 4 \choice 8 \choice 16\end{choices}
+  \itemx[pts=1] $\log_3 1$ vale
+    \begin{choices}\correct 0 \choice 1 \choice 3 \choice $-1$\end{choices}
+\end{parts}
+\answergrid[frame=cells, legend=false]
+\answergrid[frame=lines, legend=false]
+\testsetup{mcq=none}
+\end{example}
+
+Options of \cs{answergrid}:
+
+\begin{keys}
+\key{style} & \opt{band} & \opt{band} (the table above) or \opt{boxes}
+  (one row per question: letter followed by A$\square$ B$\square$ \ldots).\\
+\key{exercise} & \opt{all} / current & Questions of one exercise only
+  (default: whole copy for \opt{band}, current exercise for \opt{boxes}).\\
+\key{cell} & \opt{1.45cm} & Column width (\opt{band}); about ten questions
+  fit on one line, more continue on a second one.\\
+\key{frame} & \key{grid-frame} & \opt{cells}, \opt{rules} or \opt{lines}
+  (\opt{band}).\\
+\key{legend} & \opt{true} & Print the one-line legend of the motivation mark.\\
+\key{cols} & \opt{4} & Questions per row (\opt{boxes}).\\
+\key{title} & \opt{Risposte:} & Title of the grid (\opt{boxes}).\\
+\key{before}, \key{after} & \opt{.6em} & Space above and below.\\
+\end{keys}
+
+The questions are collected while the document is compiled and saved in the
+\texttt{.aux} file: if the table comes \emph{before} the questions (e.g.\ on
+the first page), a second compilation is needed, which Overleaf runs by
+itself. The same holds for the first compilation with \opt{mcq=band} or
+\opt{mcq=margin}.
+
+\paragraph{The margin layout (\opt{mcq=margin}).} No table: the motivation
+mark appears in the right margin, just left of the score box of each
+multiple-choice question, and the legend is printed once, after the first
+multiple-choice question of the copy.
+
+\begin{example}
+\testsetup{mcq=margin}
+\exercise Rispondi.
+\begin{parts}
+  \itemx[pts=1] Quale funzione è sempre crescente?
+    \begin{choices}\correct $e^x$ \choice $e^{-x}$ \choice $-\ln x$\end{choices}
+\end{parts}
+\testsetup{mcq=none}
+\end{example}
+
+\paragraph{Motivation space.} Off by default. \key{motivation=}\meta{lines}
+adds space after the options, as empty space or light grey squares
+(\key{motivation-style=grid}). It can be set for the whole test
+(\cs{testsetup}), for one exercise (\cs{exercise}\verb|[motivation=2]|), for
+one question (\cs{itemx}\verb|[motivation=3]|) or in \env{choices}.
+
+\begin{example}
+\testsetup{motivation-style=grid}
+\exercise Rispondi motivando.
+\begin{parts}
+  \itemx[pts=1, motivation=2] $\log_2 8$ vale
+    \begin{choices}\correct 3 \choice 4 \choice 8 \choice 16\end{choices}
+\end{parts}
+\testsetup{motivation-style=blank}
+\end{example}
+
+\paragraph{Correction strips.} In the teacher copy (\opt{answers}) the table
+shows the correct letters, and a last page collects one \emph{correction strip}
+per copy: the correct letters with the same column widths as the student
+table, labelled with the copy number. Cut out the strip of a copy and lay it
+just under the student's answer row: each letter lines up with its answer.
 
 \subsection{Solutions}
 

@@ -1,0 +1,75 @@
+\documentclass[10pt]{article}
+
+%% Esempio 5 - Tabella delle risposte per i quiz a risposta multipla.
+%% Con \testsetup{mcq=band} i punteggi dei quiz compaiono solo nella tabella
+%% (\answergrid): risposta, segno M della motivazione e punti sulla stessa
+%% riga. Segno M: spunta = motivata qui, F = su foglio a parte.
+%%
+%% Varianti utili:
+%%   \testsetup{mcq=margin}                segno M accanto al punteggio
+%%   \testsetup{grid-frame=cells}          celle bordate (anche: rules, lines)
+%%   \testsetup{motivation-mark=label}     aspetto del segno M (line, below, label)
+%%   \answergrid[style=boxes]              griglia "a. A B C D"
+%%   \usepackage[seed=2026, answers]{...}  copia docente + strisce di correzione
+%%
+%% La tabella viene compilata dal file .aux: la prima compilazione mostra
+%% "ricompilare", dalla seconda e' completa (Overleaf ricompila da solo).
+\usepackage[seed=2026]{fancytests}
+\usepackage{lmodern}
+\renewcommand*\familydefault{\sfdefault}
+\usepackage[T1]{fontenc}
+
+\geometry{a4paper, top=15mm, bottom=15mm, left=17.5mm, right=17.5mm}
+\linespread{1.25}
+
+\testsetup{class=3F, style=compact, labels=letters, mcq=band}
+
+\begin{document}
+
+\testheader[date=23/10/2026, title={Funzioni e grafici}]
+
+\exercise Rispondi ai seguenti quesiti e riporta la lettera della risposta
+nella tabella in fondo al foglio. Una risposta errata viene valutata solo se
+motivata.
+
+\begin{parts}[shuffle]
+  \itemx[pts=1] Quale delle seguenti funzioni ha dominio $x \geq -3$?
+    \begin{choices}
+      \correct $\sqrt{x+3}$ \choice $\ln(x+3)$ \choice $e^{x+3}$ \choice $\frac{1}{x+3}$
+    \end{choices}
+  \itemx[pts=1] Il grafico di $g(x) = 2^x - 3$ interseca l'asse $y$ nel punto
+    \begin{choices}
+      \correct $(0, -2)$ \choice $(0, -3)$ \choice $(0, 1)$ \choice $(0, 2)$
+    \end{choices}
+  \itemx[pts=1, noreduced] La funzione $f(x) = \left(\frac{1}{2}\right)^x$ è
+    \begin{choices}
+      \correct decrescente su tutto $\spR$.
+      \choice  crescente su tutto $\spR$.
+      \choice  crescente solo per $x > 0$.
+      \choice[fixed] nessuna delle precedenti.
+    \end{choices}
+\end{parts}
+\exercisescore
+
+\exercise[motivation=2] Rispondi motivando nello spazio a quadretti.
+
+\testsetup{motivation-style=grid}
+\begin{parts}
+  \itemx[pts=1] Quale delle seguenti espressioni è equivalente a $\log_{10}(25)$?
+    \begin{choices}
+      \correct $2 \log_{10}(5)$ \choice $\log_{10}(50) \cdot \log_{10}(2)$
+      \choice $5 \log_{10}(2)$ \choice $\frac{\log_{10}(50)}{2}$
+    \end{choices}
+  \itemx[pts=1] Quante soluzioni ha l'equazione $2^x = -x$?
+    \begin{choices}
+      \correct Una \choice Nessuna \choice Due \choice Infinite
+    \end{choices}
+  \itemx[pts=2] Domanda aperta: spiega perché $\log_a(b) \cdot \log_b(a) = 1$.
+\end{parts}
+\exercisescore
+
+\vfill
+\answergrid
+\finalscore
+
+\end{document}

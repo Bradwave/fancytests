@@ -72,6 +72,7 @@ version*).
 | [`02-verifica-fisica`](examples/02-verifica-fisica.tex) ([PDF](examples/02-verifica-fisica.pdf)) | Compact header with DSA boxes and a long title, units, physics diagram, score table |
 | [`03-copie-e-correzione`](examples/03-copie-e-correzione.tex) ([PDF](examples/03-copie-e-correzione.pdf)) | Several shuffled copies, answer key, teacher copy, reduced version |
 | [`04-sintassi-fancylessons`](examples/04-sintassi-fancylessons.tex) ([PDF](examples/04-sintassi-fancylessons.pdf)) | Old `fancylessons` syntax with the `legacy` option |
+| [`05-tabella-risposte`](examples/05-tabella-risposte.tex) ([PDF](examples/05-tabella-risposte.pdf)) | Answer table with motivation marks, grid space for motivations |
 
 To compile an example locally, run `latexmk -pdf` inside `examples/` (the
 included `.latexmkrc` finds `fancytests.sty` in the parent folder) or copy
@@ -85,6 +86,9 @@ included `.latexmkrc` finds `fancytests.sty` in the parent folder) or copy
 - **Multiple choice** — `choices` with automatic columns, shuffled options,
   fixed last option, answers that depend on a variant.
 - **Answer key** — `<document>.key.csv` with the correct letter for every copy.
+- **Answer table** — `\answergrid`: a compact band with answers, a small
+  motivation mark and the score of every multiple-choice question; correction
+  strips in the teacher copy.
 - **Randomisation** — one reproducible seed for options, questions, exercises,
   variants (`\pick`) and numbers (`\randint`).
 - **Versions** — several copies (`\Repeat`), reduced DSA version
