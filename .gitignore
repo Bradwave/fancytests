@@ -40,6 +40,11 @@ figures-cache/
 !docs/fancytests-doc.pdf
 !examples/*.pdf
 
+# --- Materiale didattico locale (verifiche, facsimili) ----------------------
+# Contiene verifiche non ancora somministrate e relative soluzioni:
+# non deve finire nel repository pubblico.
+Claude outputs/
+
 # --- Sistema ed editor -------------------------------------------------------
 .DS_Store
 Thumbs.db
