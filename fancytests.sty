@@ -1,6 +1,6 @@
 %% =========================================================================
 %%  fancytests.sty  --  verifiche di Matematica e Fisica
-%%  v1.2.0 (2026-10-16)  -  Matteo Bramardi
+%%  v1.3.0 (2026-10-25)  -  Matteo Bramardi
 %%  Erede snello di fancylessons.sty, solo per le verifiche.
 %%
 %%  This work may be distributed and/or modified under the conditions of
@@ -32,7 +32,7 @@
 %% =========================================================================
 
 \NeedsTeXFormat{LaTeX2e}[2022-11-01]
-\ProvidesPackage{fancytests}[2026-10-16 v1.2.0 Verifiche di matematica e fisica]
+\ProvidesPackage{fancytests}[2026-10-25 v1.3.0 Verifiche di matematica e fisica]
 
 %% =========================================================================
 %% 1. Opzioni
@@ -160,6 +160,7 @@
 \tl_new:N \g__ft_grademin_tl     \tl_gset:Nn \g__ft_grademin_tl {2}
 \tl_new:N \g__ft_grademax_tl     \tl_gset:Nn \g__ft_grademax_tl {10}
 \bool_new:N \g__ft_autoclose_bool \bool_gset_true:N \g__ft_autoclose_bool
+\bool_new:N \g__ft_scores_bool    \bool_gset_true:N \g__ft_scores_bool
 
 % Formatta un numero: 1 -> 1,0   0.75 -> 0,75
 \cs_new_protected:Npn \__ft_fmt:n #1
@@ -427,6 +428,8 @@
     grade-min   .tl_gset:N = \g__ft_grademin_tl ,
     grade-max   .tl_gset:N = \g__ft_grademax_tl ,
     autoclose   .bool_gset:N = \g__ft_autoclose_bool ,
+    scores      .bool_gset:N = \g__ft_scores_bool ,
+    scores      .default:n   = true ,
     final       .tl_gset:N = \g__ft_finstyle_default_tl ,
     shuffleparts .bool_gset:N = \g__ft_shuffleparts_bool ,
     mcq         .choices:nn = { none , band , margin }
@@ -881,7 +884,8 @@
         \setlength \leftmargin { \dim_eval:n { \itmindent + \ft@labelw + \ft@labelsep } }
         \setlength \labelwidth { \ft@labelw }
         \setlength \labelsep   { \ft@labelsep }
-        \setlength \rightmargin { \ft@scorecol }
+        % colonna dei riquadri del punteggio: niente colonna con scores=false
+        \setlength \rightmargin { \bool_if:NTF \g__ft_scores_bool { \ft@scorecol } { 0pt } }
         \setlength \itemsep { \l__ft_parts_sep_dim }
         \setlength \parsep { 0pt }
         \setlength \topsep { \dim_eval:n { \l__ft_parts_sep_dim / 2 + 2pt } }
@@ -896,11 +900,14 @@
 % riquadro del punteggio nel margine destro, alla prima riga del quesito
 \cs_new_protected:Npn \__ft_put_score:n #1
   {
-    \dim_set:Nn \l_tmpa_dim { \linewidth + \rightmargin }
-    \hbox_set:Nn \l_tmpa_box { \__ft_box:nn { } {#1} }
-    \dim_sub:Nn \l_tmpa_dim { \box_wd:N \l_tmpa_box }
-    \leavevmode
-    \hbox_overlap_right:n { \tex_kern:D \l_tmpa_dim \box_use:N \l_tmpa_box }
+    \bool_if:NT \g__ft_scores_bool
+      {
+        \dim_set:Nn \l_tmpa_dim { \linewidth + \rightmargin }
+        \hbox_set:Nn \l_tmpa_box { \__ft_box:nn { } {#1} }
+        \dim_sub:Nn \l_tmpa_dim { \box_wd:N \l_tmpa_box }
+        \leavevmode
+        \hbox_overlap_right:n { \tex_kern:D \l_tmpa_dim \box_use:N \l_tmpa_box }
+      }
     \ignorespaces
   }
 
@@ -908,33 +915,36 @@
 % (margin-mark=side) oppure centrato sotto di esso (margin-mark=below)
 \cs_new_protected:Npn \__ft_put_score_m:n #1
   {
-    \dim_set:Nn \l_tmpa_dim { \linewidth + \rightmargin }
-    \bool_lazy_and:nnTF
-      { \str_if_eq_p:Vn \g__ft_mmarkpos_tl { below } }
-      { ! \tl_if_empty_p:n {#1} }
+    \bool_if:NT \g__ft_scores_bool
       {
-        % riquadro del punteggio, con il segno centrato sotto
-        \hbox_set:Nn \l_tmpb_box { \__ft_box:nn { } {#1} }
-        \hbox_set:Nn \l_tmpa_box
+        \dim_set:Nn \l_tmpa_dim { \linewidth + \rightmargin }
+        \bool_lazy_and:nnTF
+          { \str_if_eq_p:Vn \g__ft_mmarkpos_tl { below } }
+          { ! \tl_if_empty_p:n {#1} }
           {
-            \box_use:N \l_tmpb_box
-            \hbox_overlap_left:n
+            % riquadro del punteggio, con il segno centrato sotto
+            \hbox_set:Nn \l_tmpb_box { \__ft_box:nn { } {#1} }
+            \hbox_set:Nn \l_tmpa_box
               {
-                \hbox_to_wd:nn { \box_wd:N \l_tmpb_box }
-                  { \hss \smash { \raisebox { -1.35em } { \ft@mbox } } \hss }
+                \box_use:N \l_tmpb_box
+                \hbox_overlap_left:n
+                  {
+                    \hbox_to_wd:nn { \box_wd:N \l_tmpb_box }
+                      { \hss \smash { \raisebox { -1.35em } { \ft@mbox } } \hss }
+                  }
               }
           }
-      }
-      {
-        \hbox_set:Nn \l_tmpa_box
           {
-            \ft@mbox
-            \tl_if_empty:nF {#1} { \hspace{.4em} \__ft_box:nn { } {#1} }
+            \hbox_set:Nn \l_tmpa_box
+              {
+                \ft@mbox
+                \tl_if_empty:nF {#1} { \hspace{.4em} \__ft_box:nn { } {#1} }
+              }
           }
+        \dim_sub:Nn \l_tmpa_dim { \box_wd:N \l_tmpa_box }
+        \leavevmode
+        \hbox_overlap_right:n { \tex_kern:D \l_tmpa_dim \box_use:N \l_tmpa_box }
       }
-    \dim_sub:Nn \l_tmpa_dim { \box_wd:N \l_tmpa_box }
-    \leavevmode
-    \hbox_overlap_right:n { \tex_kern:D \l_tmpa_dim \box_use:N \l_tmpa_box }
     \ignorespaces
   }
 

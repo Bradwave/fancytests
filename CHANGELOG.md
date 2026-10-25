@@ -4,6 +4,13 @@ All notable changes to `fancytests` are listed here.
 Versions follow [semantic versioning](https://semver.org): a new major
 version may change existing commands; minor versions only add features.
 
+## [1.3.0] — 2026-10-25
+
+### Added
+- `\testsetup{scores=false}`: no score boxes next to the questions and no
+  column reserved for them, so the text of `parts` reaches the right margin.
+  Meant for exercise sheets without points, together with `autoclose=false`.
+
 ## [1.2.0] — 2026-10-16
 
 ### Added
